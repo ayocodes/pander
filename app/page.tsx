@@ -47,7 +47,7 @@ const Home = () => {
         <div className="relative h-[60vh] md:w-[calc(100%+12rem)] md:-ml-24 ">
           <div
             className="absolute inset-0 bg-cover bg-center"
-            style={{ backgroundImage: "url('/hero.png')" }}
+            style={{ backgroundImage: "url('/hero.svg')" }}
           ></div>
           <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50  to-transparent"></div>
 
@@ -206,7 +206,7 @@ const Home = () => {
 
       <div className=" flex items-center justify-center md:w-[calc(100%+12rem)] md:-ml-24 py-20 bg-slate-200 ">
         <Link
-          href="https://github.com/capypolls"
+          href="https://github.com/ayocodes/pander"
           target="_blank"
           rel="noopener noreferrer"
           className=" border md:text-xl border-[#191A23] font-medium py-5 md:px-9 px-6 rounded-3xl"

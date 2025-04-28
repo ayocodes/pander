@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import { useAccount } from "wagmi";
 import { readContract } from "@wagmi/core";
 import { config } from "@/library/providers/wagmi/config";
+import { Input } from "../atoms/input";
 
 
 const USDE_ADDRESS = "0x9E1eF5A92C9Bf97460Cd00C0105979153EA45b27";
@@ -64,7 +65,7 @@ const LowBalanceModal: React.FC = () => {
 
   return (
     <div
-      className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50"
+      className="fixed inset-0 flex items-center justify-center bg-black/50 z-50"
       onClick={() => setIsVisible(false)}
     >
       <div
@@ -77,16 +78,17 @@ const LowBalanceModal: React.FC = () => {
           className="mx-auto mb-4 w-16 h-16"
         />
         <h2 className="text-lg font-semibold mb-2">Low Balance!</h2>
-        <p className="text-sm text-gray-600 mb-4">
-          Get free USDe tokens from the faucet below.
+        <p className="text-sm text-gray-600 mb-3">
+          Enter your address and receive 5 USDe tokens for testing
         </p>
+        <Input className=" mb-6" />
         <a
           href="https://usde-bridge.vercel.app/"
           target="_blank"
           rel="noopener noreferrer"
           className="inline-block px-4 py-2 text-white rounded bg-[#33CB82] hover:bg-[#33CB82]/80 transition"
         >
-          Go to Faucet
+          Request Tokens
         </a>
       </div>
     </div>

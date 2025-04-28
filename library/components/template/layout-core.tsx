@@ -22,8 +22,8 @@ const CoreLayout = ({ children }: { children: React.ReactNode }) => {
           <RootProvider>
             <div className="flex flex-col w-full">
               <Header />
-              {children}
               <LowBalanceModal />
+              {children}
             </div>
           </RootProvider>
         </main>

@@ -4,8 +4,8 @@ import CoreLayout from "@/library/components/template/layout-core";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://capypolls.vercel.app/"),
-  title: "CapyPolls",
-  icons: "/capypolls-logo.png",
+  title: "Pander",
+  icons: "/logo.svg",
   description: "No loss staking with memecoins",
   openGraph: {
     images: "capypolls-og.png",

@@ -6,13 +6,13 @@ import { cn } from "@/library/utils";
 
 const Header = ({ className }: { className?: string }) => {
   return (
-    <header className={cn("border-b", className)}>
+    <header className={cn("border-border border-b", className)}>
       <div className="flex items-center px-4 py-2">
         <div className="flex items-center">
           <Link href={"/"}>
             <Image
-              alt="capypolls logo"
-              src="/capypolls-logo.png"
+              alt="pander logo"
+              src="/logo.svg"
               width={70}
               height={70}
             />

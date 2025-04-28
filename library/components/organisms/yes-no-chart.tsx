@@ -9,7 +9,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/atoms/card";
+} from "@/library/components/atoms/card";
 import {
   ChartConfig,
   ChartContainer,
@@ -17,14 +17,14 @@ import {
   ChartLegendContent,
   ChartTooltip,
   ChartTooltipContent,
-} from "@/components/atoms/chart";
+} from "@/library/components/atoms/chart";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/atoms/select";
+} from "@/library/components/atoms/select";
 
 const chartConfig = {
   staking: {
@@ -67,7 +67,7 @@ export function YesNoChart({ data }: YesNoChartProps) {
 
   return (
     <Card>
-      <CardHeader className="flex items-center gap-2 space-y-0 border-b py-5 sm:flex-row">
+      <CardHeader className="flex items-center gap-2 space-y-0 border-b border-border py-5 sm:flex-row">
         <div className="grid flex-1 gap-1 text-center sm:text-left">
           <CardTitle>Binary Stake Results - Interactive</CardTitle>
           <CardDescription>

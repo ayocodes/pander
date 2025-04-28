@@ -2,13 +2,13 @@
 
 import { Label, PolarRadiusAxis, RadialBar, RadialBarChart } from "recharts";
 
-import { CardContent } from "@/components/atoms/card";
+import { CardContent } from "@/library/components/atoms/card";
 import {
   ChartConfig,
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
-} from "@/components/atoms/chart";
+} from "@/library/components/atoms/chart";
 
 interface RadialChartProps {
   data: Array<{

@@ -6,6 +6,8 @@ import { toast } from "sonner";
 import { useAccount } from "wagmi";
 import { z } from "zod";
 import { useQueryClient } from "@tanstack/react-query";
+import { readContract } from "@wagmi/core";
+import { erc20Abi } from "viem";
 
 import { Button } from "@/library/components/atoms/button";
 import {
@@ -49,6 +51,7 @@ import {
 import useCapyProtocol from "@/library/hooks/use-capy-protocol-new";
 import { useMediaQuery } from "@/library/hooks/use-media-query";
 import { useMounted } from "@/library/hooks/use-mounted";
+import { config } from "@/library/providers/wagmi/config";
 
 const FormSchema = z.object({
   question: z.string().min(1, { message: "Question is required" }),
@@ -91,6 +94,41 @@ const NewPoll = () => {
 
   const queryClient = useQueryClient(); 
 
+  // Function to add token to wallet
+  const addTokenToWallet = async (tokenAddress: string, tokenName: string, tokenSymbol: string) => {
+    if (!window.ethereum) {
+      console.log("MetaMask not detected");
+      return;
+    }
+    
+    try {
+      // Get token info from contract
+      const decimals = await readContract(config, {
+        address: tokenAddress as `0x${string}`,
+        abi: erc20Abi,
+        functionName: "decimals",
+        args: [],
+      });
+      
+      await window.ethereum.request({
+        method: "wallet_watchAsset",
+        params: {
+          type: "ERC20",
+          options: {
+            address: tokenAddress,
+            symbol: tokenSymbol,
+            decimals: Number(decimals),
+            name: tokenName,
+          },
+        },
+      });
+      
+      console.log(`${tokenSymbol} token added to wallet successfully`);
+    } catch (err) {
+      console.error(`Failed to add ${tokenSymbol} token to wallet:`, err);
+    }
+  };
+
   const onSubmit = async (data: z.infer<typeof FormSchema>) => {
     if (!address) {
       toast.error("Please connect wallet");
@@ -105,7 +143,8 @@ const NewPoll = () => {
         data.durationUnit
       );
 
-      await createPoll({
+      // Create the poll
+      const result = await createPoll({
         question: data.question,
         avatar: data.avatar || "",
         rule: data.rule || "",
@@ -115,6 +154,48 @@ const NewPoll = () => {
         noTokenName: data.noTokenName,
         noTokenSymbol: data.noTokenSymbol,
       });
+      
+      // Get the token addresses from the transaction receipt or event logs
+      if (result && result.logs) {
+        // Extract poll address from logs (implementation would depend on your contract's events)
+        // This is a simplified example - you might need to parse the logs differently
+        const pollCreatedLog = result.logs.find(log => 
+          log.topics && log.topics[0] === "0x..." // Replace with your event signature
+        );
+        
+        if (pollCreatedLog) {
+          // Extract poll address and token addresses
+          // This is placeholder logic - you'll need to adjust based on your contract
+          const pollData = await queryClient.fetchQuery({
+            queryKey: ["newly-created-poll", pollCreatedLog.address],
+            queryFn: async () => {
+              // Query your subgraph or contract to get the poll details
+              // Including the yes and no token addresses
+              
+              // Placeholder for demonstration - replace with actual implementation
+              const response = await fetch(`your-api-endpoint/${pollCreatedLog.address}`);
+              return response.json();
+            }
+          });
+          
+          // Prompt user to add tokens to wallet
+          if (pollData && pollData.yesToken && pollData.noToken) {
+            // Add YES token to wallet
+            await addTokenToWallet(
+              pollData.yesToken, 
+              data.yesTokenName,
+              data.yesTokenSymbol
+            );
+            
+            // Add NO token to wallet
+            await addTokenToWallet(
+              pollData.noToken,
+              data.noTokenName,
+              data.noTokenSymbol
+            );
+          }
+        }
+      }
 
       toast.success("Poll created successfully!");
       form.reset();
