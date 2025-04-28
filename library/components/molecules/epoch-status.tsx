@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { Hash } from "viem";
 import { Loader, Expand } from "lucide-react";
 import { Card, CardContent } from "@/library/components/atoms/card";
-import useCapyProtocol from "@/library/hooks/use-capy-protocol-new";
+import usePanderProtocol from "@/library/hooks/use-pander-protocol-new";
 import {
   Dialog,
   DialogContent,
@@ -64,7 +64,7 @@ const EpochStatus = ({ pollAddress }: EpochStatusProps) => {
   const [error, setError] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [progress, setProgress] = useState(0); // 0-100 progress within current epoch
-  const { getCurrentEpoch, getEpochInfo } = useCapyProtocol();
+  const { getCurrentEpoch, getEpochInfo } = usePanderProtocol();
 
   // Calculate progress within current epoch
   const calculateProgress = useCallback(
@@ -135,7 +135,7 @@ const EpochStatus = ({ pollAddress }: EpochStatusProps) => {
     if (pollAddress) {
       fetchEpochData();
     }
-  }, [pollAddress, getCurrentEpoch, getEpochInfo]);
+  }, [pollAddress, getCurrentEpoch, getEpochInfo, calculateProgress]);
 
   // Update progress periodically
   useEffect(() => {
@@ -157,10 +157,13 @@ const EpochStatus = ({ pollAddress }: EpochStatusProps) => {
   // Calculate position offset for each epoch
   const calculatePositionOffset = (epochNum: number) => {
     if (currentEpoch === null) return 0;
-    // If epoch is completed
+
+    // If epoch is completed (previous epoch)
     if (epochNum < currentEpoch) return 100;
-    // If epoch is future
+
+    // If epoch is future (beyond current)
     if (epochNum > currentEpoch) return 0;
+
     // Current epoch - use progress
     return progress;
   };
@@ -173,6 +176,24 @@ const EpochStatus = ({ pollAddress }: EpochStatusProps) => {
     return EPOCH_DISTRIBUTIONS[currentEpoch - 1].message;
   };
 
+  // Get the current epoch color and border
+  const getCurrentEpochColor = () => {
+    if (currentEpoch === null || currentEpoch < 1 || currentEpoch > 4) {
+      return { color: "#e2e8f0", border: "#cbd5e1" };
+    }
+    const currentEpochData = EPOCH_DISTRIBUTIONS[currentEpoch - 1];
+    return {
+      color: currentEpochData.color,
+      border: currentEpochData.border,
+    };
+  };
+
+  // Get current epoch data
+  const currentEpochData =
+    currentEpoch !== null && epochDetails.length > 0
+      ? epochDetails[currentEpoch - 1]
+      : null;
+
   return (
     <>
       <Card className="mt-4">
@@ -183,12 +204,14 @@ const EpochStatus = ({ pollAddress }: EpochStatusProps) => {
                 EPOCH Status
               </span>
             </div>
-            <button
-              className="p-1 rounded-full hover:bg-gray-100 transition-all"
-              onClick={() => setDialogOpen(true)}
-            >
-              <Expand size={16} />
-            </button>
+            {!isLoading && (
+              <button
+                className="p-1 rounded-full hover:bg-gray-100 transition-all"
+                onClick={() => setDialogOpen(true)}
+              >
+                <Expand size={16} />
+              </button>
+            )}
           </div>
 
           <div className="text-3xl font-bold mb-4">
@@ -203,90 +226,103 @@ const EpochStatus = ({ pollAddress }: EpochStatusProps) => {
           ) : error ? (
             <div className="text-red-500 text-sm py-2">{error}</div>
           ) : (
-            <div className="flex h-20 overflow-hidden rounded-lg  gap-2">
-              {epochDetails.map((epoch, index) => (
-                <div
-                  key={`epoch-${epoch.number}`}
-                  className={`relative h-full ${
-                    index === 0 ? "rounded-l-lg" : ""
-                  } ${
-                    index === epochDetails.length - 1 ? "rounded-r-lg" : ""
-                  } overflow-hidden bg-slate-50 border border-slate-100`}
-                  style={{
-                    width: `${epoch.percentage}%`,
-                    background:
-                      index % 2 === 0
-                        ? "rgba(245, 247, 250, 0.7)"
-                        : "rgba(242, 244, 247, 0.4)",
-                  }}
-                >
-                  {/* Left colored bar representing percentage distribution and current progress */}
+            <div className="flex h-20 overflow-hidden rounded-lg gap-2 mb-6">
+              {epochDetails.map((epoch, index) => {
+                return (
                   <div
-                    className="absolute left-0 top-0 bottom-0 z-10 transition-all duration-1000"
+                    key={`epoch-${epoch.number}`}
+                    className={`relative h-full ${index === 0 ? "rounded-l-lg" : ""
+                      } ${index === epochDetails.length - 1 ? "rounded-r-lg" : ""
+                      } overflow-hidden bg-slate-50 border border-slate-100`}
                     style={{
-                      width: `${calculatePositionOffset(epoch.number)}%`,
-                      backgroundColor: epoch.color,
-                      borderRight: `2px solid ${epoch.border}`, // Combined width and color
-                      opacity:
-                        currentEpoch !== null && epoch.number === currentEpoch
-                          ? 0.3
-                          : 0,
+                      width: `${epoch.percentage}%`,
                     }}
-                  />
+                  >
+                    {/* Main progress background in green */}
+                    <div
+                      className="absolute left-0 top-0 bottom-0 z-10 transition-all duration-1000 bg-green-200"
+                      style={{
+                        width: `${calculatePositionOffset(epoch.number)}%`,
+                        opacity:
+                          currentEpoch !== null &&
+                            (epoch.number === currentEpoch ||
+                              epoch.number < currentEpoch)
+                            ? 0.5
+                            : 0,
+                      }}
+                    />
 
-                  {/* Text */}
-                  <div className="absolute inset-0 z-20 flex flex-col justify-center items-center">
-                    <div className="text-center flex items-center gap-1">
-                      <p
-                        className={`text-sm font-medium ${
-                          currentEpoch !== null && epoch.number === currentEpoch
-                            ? "text-gray-800"
+                    {/* Gradient indicator line at the end of progress */}
+                    {currentEpoch !== null &&
+                      epoch.number === currentEpoch &&
+                      calculatePositionOffset(epoch.number) > 0 && (
+                        <div
+                          className="absolute top-0 bottom-0 z-11 w-1 flex "
+                          style={{
+                            left: `calc(${calculatePositionOffset(
+                              epoch.number
+                            )}% - 2px)`,
+                          }}
+                        >
+                          <div className="w-[1px] bg-gradient-to-t from-green-400 to-green-100 " />
+                          <div className="w-[3px] bg-gradient-to-t from-green-400 to-green-50" />
+                        </div>
+                      )}
+
+                    {/* Text */}
+                    <div className="absolute inset-0 z-20 flex flex-col justify-center items-center">
+                      <div className="text-center flex items-center gap-1">
+                        <p
+                          className={`text-sm font-medium ${currentEpoch !== null &&
+                            epoch.number === currentEpoch
+                            ? "text-green-700"
                             : "text-gray-500"
-                        }`}
-                      >
-                        epoch {epoch.number}
-                      </p>
-                      {currentEpoch !== null &&
-                        epoch.number === currentEpoch && (
-                          <span className="flex items-center justify-center mt-1">
-                            <svg
-                              width="10"
-                              height="10"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              xmlns="http://www.w3.org/2000/svg"
-                            >
-                              <path
-                                d="M20 6L9 17L4 12"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                              />
-                            </svg>
-                          </span>
-                        )}
+                            }`}
+                        >
+                          epoch {epoch.number}
+                        </p>
+                        {currentEpoch !== null &&
+                          epoch.number === currentEpoch && (
+                            <span className="flex items-center justify-center mt-1 text-green-700">
+                              <svg
+                                width="10"
+                                height="10"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                xmlns="http://www.w3.org/2000/svg"
+                              >
+                                <path
+                                  d="M20 6L9 17L4 12"
+                                  stroke="currentColor"
+                                  strokeWidth="2"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                />
+                              </svg>
+                            </span>
+                          )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
 
           {currentEpoch !== null && epochDetails.length > 0 && (
             <div className="space-y-1 mt-2">
               {epochDetails[currentEpoch - 1] && (
-                <div className="text-xs text-green-500">
+                <div className="text-xs text-slate-500">
                   <span>
                     {progress.toFixed(0)}% complete •{" "}
                     {progress < 100
                       ? formatDistanceToNow(
-                          new Date(
-                            epochDetails[currentEpoch - 1].endTime * 1000
-                          ),
-                          { addSuffix: false }
-                        ) + " remaining"
-                      : "Complete"}
+                        new Date(
+                          epochDetails[currentEpoch - 1].endTime * 1000
+                        ),
+                        { addSuffix: false }
+                      ) + ` in epoch ${currentEpoch} left`
+                      : `epoch ${currentEpoch} complete`}
                   </span>
                 </div>
               )}
@@ -297,7 +333,7 @@ const EpochStatus = ({ pollAddress }: EpochStatusProps) => {
 
       {/* Detailed Epoch Breakdown Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="sm:max-w-[450px]">
+        <DialogContent className="sm:max-w-[450px] border-border">
           <DialogHeader>
             <DialogTitle className="text-lg font-bold">
               Epoch Breakdown
@@ -306,84 +342,96 @@ const EpochStatus = ({ pollAddress }: EpochStatusProps) => {
 
           <div className="py-2">
             {/* Epoch visual status - same as main card */}
-            <div className="flex h-20 overflow-hidden rounded-lg  gap-2 mb-6">
-              {epochDetails.map((epoch, index) => (
-                <div
-                  key={`epoch-${epoch.number}`}
-                  className={`relative h-full ${
-                    index === 0 ? "rounded-l-lg" : ""
-                  } ${
-                    index === epochDetails.length - 1 ? "rounded-r-lg" : ""
-                  } overflow-hidden bg-slate-50 border border-slate-100`}
-                  style={{
-                    width: `${epoch.percentage}%`,
-                    background:
-                      index % 2 === 0
-                        ? "rgba(245, 247, 250, 0.7)"
-                        : "rgba(242, 244, 247, 0.4)",
-                  }}
-                >
-                  {/* Left colored bar representing percentage distribution and current progress */}
+            <div className="flex h-20 overflow-hidden rounded-lg gap-2 mb-6">
+              {epochDetails.map((epoch, index) => {
+                return (
                   <div
-                    className="absolute left-0 top-0 bottom-0 z-10 transition-all duration-1000"
+                    key={`epoch-${epoch.number}`}
+                    className={`relative h-full ${index === 0 ? "rounded-l-lg" : ""
+                      } ${index === epochDetails.length - 1 ? "rounded-r-lg" : ""
+                      } overflow-hidden bg-slate-50 border border-slate-100`}
                     style={{
-                      width: `${calculatePositionOffset(epoch.number)}%`,
-                      backgroundColor: epoch.color,
-                      borderRight: `2px solid ${epoch.border}`, // Combined width and color
-                      opacity:
-                        currentEpoch !== null && epoch.number === currentEpoch
-                          ? 0.3
-                          : 0,
+                      width: `${epoch.percentage}%`,
                     }}
-                  />
+                  >
+                    {/* Main progress background in green */}
+                    <div
+                      className="absolute left-0 top-0 bottom-0 z-10 transition-all duration-1000 bg-green-200"
+                      style={{
+                        width: `${calculatePositionOffset(epoch.number)}%`,
+                        opacity:
+                          currentEpoch !== null &&
+                            (epoch.number === currentEpoch ||
+                              epoch.number < currentEpoch)
+                            ? 0.5
+                            : 0,
+                      }}
+                    />
 
-                  {/* Text */}
-                  <div className="absolute inset-0 z-20 flex flex-col justify-center items-center">
-                    <div className="text-center flex items-center gap-1">
-                      <p
-                        className={`text-sm font-medium ${
-                          currentEpoch !== null && epoch.number === currentEpoch
-                            ? "text-gray-800"
+                    {/* Gradient indicator line at the end of progress */}
+                    {currentEpoch !== null &&
+                      epoch.number === currentEpoch &&
+                      calculatePositionOffset(epoch.number) > 0 && (
+                        <div
+                          className="absolute top-0 bottom-0 z-11 w-1 flex "
+                          style={{
+                            left: `calc(${calculatePositionOffset(
+                              epoch.number
+                            )}% - 2px)`,
+                          }}
+                        >
+                          <div className="w-[1px] bg-gradient-to-t from-green-400 to-green-100 " />
+                          <div className="w-[3px] bg-gradient-to-t from-green-400 to-green-50" />
+                        </div>
+                      )}
+
+                    {/* Text */}
+                    <div className="absolute inset-0 z-20 flex flex-col justify-center items-center">
+                      <div className="text-center flex items-center gap-1">
+                        <p
+                          className={`text-sm font-medium ${currentEpoch !== null &&
+                            epoch.number === currentEpoch
+                            ? "text-green-700"
                             : "text-gray-500"
-                        }`}
-                      >
-                        epoch {epoch.number}
-                      </p>
-                      {currentEpoch !== null &&
-                        epoch.number === currentEpoch && (
-                          <span className="flex items-center justify-center mt-1">
-                            <svg
-                              width="10"
-                              height="10"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              xmlns="http://www.w3.org/2000/svg"
-                            >
-                              <path
-                                d="M20 6L9 17L4 12"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                              />
-                            </svg>
-                          </span>
-                        )}
+                            }`}
+                        >
+                          epoch {epoch.number}
+                        </p>
+                        {currentEpoch !== null &&
+                          epoch.number === currentEpoch && (
+                            <span className="flex items-center justify-center mt-1 text-green-700">
+                              <svg
+                                width="10"
+                                height="10"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                xmlns="http://www.w3.org/2000/svg"
+                              >
+                                <path
+                                  d="M20 6L9 17L4 12"
+                                  stroke="currentColor"
+                                  strokeWidth="2"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                />
+                              </svg>
+                            </span>
+                          )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
-
             {/* Detailed breakdown of each epoch */}
             <div className="space-y-3">
               {epochDetails.map((epoch) => (
                 <div
                   key={`breakdown-${epoch.number}`}
-                  className={`rounded-lg p-3 bg-white border border-gray-200`}
+                  className={`rounded-lg p-3 bg-white border border-gray-200 `}
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium bg-slate-50 border-slate-100 border">
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium bg-gray-50 border-gray-200 border">
                       {epoch.number}
                     </div>
 
@@ -396,7 +444,7 @@ const EpochStatus = ({ pollAddress }: EpochStatusProps) => {
                       </p>
                     </div>
 
-                    {/* Add percentage badge that matches the color */}
+                    {/* Percentage badge */}
                     <div
                       className="text-xs px-2 py-1 rounded-full"
                       style={{

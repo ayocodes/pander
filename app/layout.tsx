@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   icons: "/logo.svg",
   description: "No loss staking with memecoins",
   openGraph: {
-    images: "capypolls-og.png",
+    images: "pander-og.png",
   },
 };
 

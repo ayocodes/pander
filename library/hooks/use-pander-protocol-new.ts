@@ -182,7 +182,7 @@ const queryReducer = (state: QueryState, action: QueryAction): QueryState => {
   }
 };
 
-const useCapyProtocol = () => {
+const usePanderProtocol = () => {
   const [state, dispatch] = useReducer(queryReducer, initialState);
 
   // Query fetcher functions
@@ -411,7 +411,7 @@ const useCapyProtocol = () => {
         functionName: "currentEpoch",
         args: [],
       });
-      
+
       return currentEpoch;
     } catch (error) {
       console.error("Error getting current epoch:", error);
@@ -419,27 +419,30 @@ const useCapyProtocol = () => {
     }
   }, []);
 
-  const getEpochInfo = useCallback(async (pollAddress: Hash, epochNumber: number) => {
-    try {
-      const epochInfo = await readContract(config, {
-        address: pollAddress,
-        abi: CAPY_POLL_ABI,
-        functionName: "getEpochInfo",
-        args: [BigInt(epochNumber)],
-      });
-      
-      return {
-        startTime: Number(epochInfo[0]),
-        endTime: Number(epochInfo[1]),
-        totalDistribution: formatEther(epochInfo[2]),
-        isDistributed: epochInfo[3],
-        numStakers: Number(epochInfo[4]),
-      };
-    } catch (error) {
-      console.error("Error getting epoch info:", error);
-      throw error;
-    }
-  }, []);
+  const getEpochInfo = useCallback(
+    async (pollAddress: Hash, epochNumber: number) => {
+      try {
+        const epochInfo = await readContract(config, {
+          address: pollAddress,
+          abi: CAPY_POLL_ABI,
+          functionName: "getEpochInfo",
+          args: [BigInt(epochNumber)],
+        });
+
+        return {
+          startTime: Number(epochInfo[0]),
+          endTime: Number(epochInfo[1]),
+          totalDistribution: formatEther(epochInfo[2]),
+          isDistributed: epochInfo[3],
+          numStakers: Number(epochInfo[4]),
+        };
+      } catch (error) {
+        console.error("Error getting epoch info:", error);
+        throw error;
+      }
+    },
+    []
+  );
 
   // Queries
   const predictionMarkets = useQuery({
@@ -622,4 +625,4 @@ const useCapyProtocol = () => {
   };
 };
 
-export default useCapyProtocol;
+export default usePanderProtocol;

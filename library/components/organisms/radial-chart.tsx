@@ -21,11 +21,11 @@ interface RadialChartProps {
 const chartConfig = {
   yes: {
     label: "yes",
-    color: "hsl(var(--chart-2))",
+    color: "var(--color-chart-2)",
   },
   no: {
     label: "no",
-    color: "hsl(var(--chart-1))",
+    color: "var(--color-chart-1)",
   },
 } satisfies ChartConfig;
 

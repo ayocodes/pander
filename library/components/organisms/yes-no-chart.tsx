@@ -32,11 +32,11 @@ const chartConfig = {
   },
   yes: {
     label: "Yes",
-    color: "hsl(var(--chart-2))",
+    color: "var(--color-chart-2)",
   },
   no: {
     label: "No",
-    color: "hsl(var(--chart-1))",
+    color: "var(--color-chart-1)",
   },
 } satisfies ChartConfig;
 

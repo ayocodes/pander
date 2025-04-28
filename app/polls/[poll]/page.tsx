@@ -8,8 +8,11 @@ import { toast } from "sonner";
 import { Address } from "viem";
 import { useAccount } from "wagmi";
 
-
-import { Avatar, AvatarFallback, AvatarImage } from "@/library/components/atoms/avatar";
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "@/library/components/atoms/avatar";
 import { Button } from "@/library/components/atoms/button";
 import {
   Card,
@@ -27,7 +30,7 @@ import {
 } from "@/library/components/atoms/tabs";
 import { RadialChart } from "@/library/components/organisms/radial-chart";
 import { YesNoChart } from "@/library/components/organisms/yes-no-chart";
-import useCapyProtocol from "@/library/hooks/use-capy-protocol-new";
+import usePanderProtocol from "@/library/hooks/use-pander-protocol-new";
 import { useMounted } from "@/library/hooks/use-mounted";
 import { ellipsisAddress, getInitials, isValidUrl } from "@/library/utils";
 import { useQueryClient } from "@tanstack/react-query";
@@ -42,7 +45,7 @@ const Poll = () => {
   const [stakeAmount, setStakeAmount] = useState(0);
 
   const { stake, withdrawFunds, poll, updateParams, addTokenToWallet } =
-    useCapyProtocol();
+    usePanderProtocol();
   const { address } = useAccount();
 
   useEffect(() => {
@@ -141,10 +144,9 @@ const Poll = () => {
                 src={
                   isValidUrl(poll.data?.avatar ?? "")
                     ? poll.data?.avatar
-                    : `https://avatar.vercel.sh/${
-                        (poll.data?.pollAddress ?? "") +
-                        (poll.data?.question ?? "")
-                      }`
+                    : `https://avatar.vercel.sh/${(poll.data?.pollAddress ?? "") +
+                    (poll.data?.question ?? "")
+                    }`
                 }
                 alt={`${poll.data?.question ?? "Poll"} logo`}
               />
@@ -231,8 +233,8 @@ const Poll = () => {
             </Card>
           </div>
           {poll.data?.pollAddress && isRegistrationOpen && (
-              <EpochStatus pollAddress={poll.data.pollAddress} />
-            )}
+            <EpochStatus pollAddress={poll.data.pollAddress} />
+          )}
         </div>
 
         <div className=" w-1 hidden md:block">
@@ -274,14 +276,14 @@ const Poll = () => {
                 </div>
                 <div className=" flex  gap-8 ">
                   <Button
-                    className="w-full h-12 bg-green-500 hover:bg-green-400"
+                    className="w-full h-12 bg-green-400 hover:bg-green-300"
                     onClick={() => handleStake(true)}
                     disabled={isStaking || !stakeAmount}
                   >
                     {isStaking ? "Staking..." : "Stake YES"}
                   </Button>
                   <Button
-                    className="w-full h-12 bg-red-500 hover:bg-red-400"
+                    className="w-full h-12 bg-rose-500 hover:bg-rose-400"
                     onClick={() => handleStake(false)}
                     disabled={isStaking || !stakeAmount}
                   >
@@ -294,20 +296,18 @@ const Poll = () => {
                 <div className=" pb-3">
                   <div className=" flex gap-3 items-center">
                     <div
-                      className={` ${
-                        poll.data?.winner === "Yes"
-                          ? " bg-green-200"
-                          : " bg-red-200"
-                      } min-w-12 h-12 rounded-full grid place-items-center`}
+                      className={` ${poll.data?.winner === "Yes"
+                        ? " bg-green-200"
+                        : " bg-red-200"
+                        } min-w-12 h-12 rounded-full grid place-items-center`}
                     >
                       <Check
                         size={30}
                         strokeWidth={3}
-                        className={` ${
-                          poll.data?.winner === "Yes"
-                            ? " text-green-500"
-                            : " text-red-500"
-                        }`}
+                        className={` ${poll.data?.winner === "Yes"
+                          ? " text-green-500"
+                          : " text-red-500"
+                          }`}
                       />
                     </div>
                     <h2 className="text-2xl font-semibold leading-none tracking-tight">
@@ -388,7 +388,7 @@ const Poll = () => {
                       {getInitials(item?.user ?? "")}
                     </AvatarFallback>
                   </Avatar>
-              
+
                   <div className="flex-1">
                     <div className="text-sm">
                       <span className="font-medium">{item.user}</span>{" "}

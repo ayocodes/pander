@@ -12,7 +12,7 @@ import {
   CardTitle,
 } from "@/library/components/atoms/card";
 import NewPoll from "@/library/components/organisms/new-poll";
-import useCapyProtocol from "@/library/hooks/use-capy-protocol-new";
+import usePanderProtocol from "@/library/hooks/use-pander-protocol-new";
 import { useMounted } from "@/library/hooks/use-mounted";
 import { getInitials, isValidUrl } from "@/library/utils";
 
@@ -29,7 +29,7 @@ type ActivityItem = {
 };
 
 const Home = () => {
-  const { predictionMarkets } = useCapyProtocol();
+  const { predictionMarkets } = usePanderProtocol();
   const isMounted = useMounted();
 
   if (!isMounted) {
@@ -84,10 +84,9 @@ const Home = () => {
                         src={
                           isValidUrl(market?.avatar ?? "")
                             ? market?.avatar
-                            : `https://avatar.vercel.sh/${
-                                (market?.pollAddress ?? "") +
-                                (market?.question ?? "")
-                              }`
+                            : `https://avatar.vercel.sh/${(market?.pollAddress ?? "") +
+                            (market?.question ?? "")
+                            }`
                         }
                         alt={`${market?.question ?? "Poll"} logo`}
                       />
@@ -102,11 +101,10 @@ const Home = () => {
 
                   <div className="flex gap-2 mb-2">
                     <span
-                      className={`px-3 py-1 rounded-full text-xs ${
-                        market.status === "active"
-                          ? "bg-green-100 text-green-800"
-                          : "bg-red-100 text-red-800"
-                      }`}
+                      className={`px-3 py-1 rounded-full text-xs ${market.status === "active"
+                        ? "bg-green-100 text-green-800"
+                        : "bg-red-100 text-red-800"
+                        }`}
                     >
                       {market.status}
                     </span>
