@@ -1,8 +1,8 @@
 import { Hash } from "viem";
 
 let network: "pharosDevnet" | "anvil" = "pharosDevnet";
-let capyCoreAddress: Hash = "0x0000000000000000000000000000000000000000";
-let startBlock: number = 0;
+let capyCoreAddress: Hash = "0x75b15246FCbB43Fca85CEe40cDdEF5125CB4A814";
+let startBlock: number = 19037259;
 
 if (process.env.NODE_ENV === "development") {
   network = "anvil";

@@ -1,6 +1,6 @@
 const data = {
   name: "TestToken",
-  address: "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+  address: "0x49F1A7a166f8a14ab288d7CBd4Bee2B48aAFB5b9",
   abi: [
     { type: "constructor", inputs: [], stateMutability: "nonpayable" },
     {
