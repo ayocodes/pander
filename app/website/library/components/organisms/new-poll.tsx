@@ -46,7 +46,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/library/components/atoms/tooltip";
-import usePanderProtocol from "@/library/hooks/use-pander-protocol-local";
+import usePanderProtocol from "@/library/hooks/use-pander-protocol-new";
 import { useMediaQuery } from "@/library/hooks/use-media-query";
 import { useMounted } from "@/library/hooks/use-mounted";
 

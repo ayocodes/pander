@@ -12,7 +12,7 @@ import {
   CardTitle,
 } from "@/library/components/atoms/card";
 import NewPoll from "@/library/components/organisms/new-poll";
-import usePanderProtocol from "@/library/hooks/use-pander-protocol-local";
+import usePanderProtocol from "@/library/hooks/use-pander-protocol-new";
 import { useMounted } from "@/library/hooks/use-mounted";
 import { getInitials, isValidUrl } from "@/library/utils";
 

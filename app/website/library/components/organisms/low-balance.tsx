@@ -1,40 +1,17 @@
-"use client"
+"use client";
+
+import { readContract, waitForTransaction, writeContract } from "@wagmi/core";
 import React, { useEffect, useState } from "react";
 import { useAccount } from "wagmi";
-import { readContract, writeContract, waitForTransaction } from "@wagmi/core";
-import { config } from "../../providers/wagmi/config";
-import { Input } from "../atoms/input";
 
-const TEST_TOKEN_ADDRESS = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
-const TEST_TOKEN_ABI = [
-  {
-    inputs: [
-      { name: "to", type: "address" },
-      { name: "amount", type: "uint256" },
-    ],
-    name: "transfer",
-    outputs: [{ name: "", type: "bool" }],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [{ name: "account", type: "address" }],
-    name: "balanceOf",
-    outputs: [{ name: "", type: "uint256" }],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [],
-    name: "mint",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  }
-] as const;
+import { config } from "@/library/providers/wagmi/config";
+import data from "@/library/types/contracts/test-token";
+import usePanderProtocol from "@/library/hooks/use-pander-protocol-new";
+import { parseEther } from "viem";
 
 const LowBalanceModal: React.FC = () => {
-  const [balance, setBalance] = useState<number>();
+  const { addTokenToWallet } = usePanderProtocol();
+  const [balance, setBalance] = useState<bigint>();
   const [isVisible, setIsVisible] = useState(false);
   const { address } = useAccount();
 
@@ -42,12 +19,12 @@ const LowBalanceModal: React.FC = () => {
     try {
       if (!address) return;
       const balance = await readContract(config, {
-        address: TEST_TOKEN_ADDRESS,
-        abi: TEST_TOKEN_ABI,
+        address: data.address,
+        abi: data.abi,
         functionName: "balanceOf",
         args: [address],
       });
-      setBalance(Number(balance));
+      setBalance(balance);
     } catch (err) {
       console.error("Failed to check user balance:", err);
     }
@@ -58,13 +35,14 @@ const LowBalanceModal: React.FC = () => {
       if (!address) return;
 
       const hash = await writeContract(config, {
-        address: TEST_TOKEN_ADDRESS,
-        abi: TEST_TOKEN_ABI,
+        address: data.address,
+        abi: data.abi,
         functionName: "mint",
       });
 
       await waitForTransaction(config, { hash });
       await checkFaucetBalance(); // Refresh balance after minting
+      addTokenToWallet(data.address);
     } catch (err) {
       console.error("Failed to mint tokens:", err);
     }
@@ -75,7 +53,7 @@ const LowBalanceModal: React.FC = () => {
   }, [address]);
 
   useEffect(() => {
-    if (balance !== undefined && balance < 1) {
+    if (balance !== undefined && balance < parseEther("2")) {
       setIsVisible(true);
     } else {
       setIsVisible(false);

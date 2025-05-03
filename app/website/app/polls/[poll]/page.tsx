@@ -30,7 +30,7 @@ import {
 } from "@/library/components/atoms/tabs";
 import { RadialChart } from "@/library/components/organisms/radial-chart";
 import { YesNoChart } from "@/library/components/organisms/yes-no-chart";
-import usePanderProtocol from "@/library/hooks/use-pander-protocol-local";
+import usePanderProtocol from "@/library/hooks/use-pander-protocol-new";
 import { useMounted } from "@/library/hooks/use-mounted";
 import { ellipsisAddress, getInitials, isValidUrl } from "@/library/utils";
 import { useQueryClient } from "@tanstack/react-query";
