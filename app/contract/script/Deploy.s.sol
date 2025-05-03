@@ -70,7 +70,7 @@ contract Deploy is Script {
 anvil
 
 2. Set environment variables:
-export PRIVATE_KEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
+export PRIVATE_KEY=0x92db14e403b83dfe3df233f83dfa3a0d7096f21ca9b0d6d6b8d88b2b4ec1564e
 
 3. Run deployment:
 forge script script/Deploy.s.sol:Deploy \
