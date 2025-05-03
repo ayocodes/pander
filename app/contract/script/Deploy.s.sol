@@ -38,7 +38,7 @@ contract Deploy is Script {
             address(pollImplementation),
             address(tokenImplementation),
             address(testToken),
-            address(0), // No sUSDe token needed for testing
+            // address(0), // No sUSDe token needed for testing
             deployer
         );
         console.log("CapyCore deployed at:", address(capyCore));

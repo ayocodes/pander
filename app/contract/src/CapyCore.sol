@@ -64,7 +64,7 @@ contract CapyCore is ReentrancyGuard, Ownable {
         address _cloneablePoll,
         address _cloneableToken,
         address _usdeToken,
-        address _susdeToken, // Kept for compatibility but not used
+        // address _susdeToken, // Kept for compatibility but not used
         address initialOwner
     ) Ownable(initialOwner) {
         require(_cloneablePoll != address(0), "Invalid poll address");
