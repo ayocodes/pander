@@ -1,12 +1,12 @@
 import { getDefaultConfig } from "connectkit";
+import { type Chain } from "viem";
 import { createConfig, http } from "wagmi";
-import { anvil, opBNBTestnet } from "wagmi/chains";
-import { defineChain } from "viem";
+import { anvil } from "wagmi/chains";
 
 const isDev = process.env.NODE_ENV === "development";
 
 // Configure anvil chain for local development
-const localAnvil = {
+export const localAnvil = {
   ...anvil,
   id: 31337,
   rpcUrls: {
@@ -16,10 +16,11 @@ const localAnvil = {
 };
 
 // Configure Pharos Devnet
-const pharosDevnet = defineChain({
+
+export const pharosDevnet = {
   id: 50002,
   name: "Pharos Devnet",
-  nativeCurrency: { name: "ETH", symbol: "ETH", decimals: 18 }, 
+  nativeCurrency: { name: "ETH", symbol: "ETH", decimals: 18 },
   rpcUrls: {
     default: { http: ["https://devnet.dplabs-internal.com"] },
     public: { http: ["https://devnet.dplabs-internal.com"] },
@@ -27,8 +28,9 @@ const pharosDevnet = defineChain({
   blockExplorers: {
     default: { name: "PharosScan", url: "https://pharosscan.xyz" },
   },
+  contracts: {}, // Added missing contracts field as an empty object
   testnet: true,
-});
+} as const satisfies Chain;
 
 export const config = createConfig(
   getDefaultConfig({
