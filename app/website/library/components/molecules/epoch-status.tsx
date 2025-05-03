@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { Hash } from "viem";
 import { Loader, Expand } from "lucide-react";
 import { Card, CardContent } from "@/library/components/atoms/card";
-import usePanderProtocol from "@/library/hooks/use-pander-protocol-local";
+import usePanderProtocol from "@/library/hooks/use-pander-protocol-new";
 import {
   Dialog,
   DialogContent,
@@ -10,6 +10,7 @@ import {
   DialogTitle,
 } from "@/library/components/atoms/dialog";
 import { formatDistanceToNow } from "date-fns";
+import EpochVisualization, { EpochDetail } from "@/library/components/atoms/epoch-visualization";
 
 // Define epoch distribution percentages from contract
 const EPOCH_DISTRIBUTIONS = [
@@ -59,37 +60,102 @@ interface EpochStatusProps {
 
 const EpochStatus = ({ pollAddress }: EpochStatusProps) => {
   const [currentEpoch, setCurrentEpoch] = useState<number | null>(null);
-  const [epochDetails, setEpochDetails] = useState<Array<any>>([]);
+  const [epochDetails, setEpochDetails] = useState<EpochDetail[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [progress, setProgress] = useState(0); // 0-100 progress within current epoch
-  const { getCurrentEpoch, getEpochInfo } = usePanderProtocol();
+  const { getCurrentEpoch, getEpochInfo, poll, updateParams } = usePanderProtocol();
+
+  // Update params to load poll data
+  useEffect(() => {
+    if (pollAddress) {
+      updateParams({ pollAddress });
+    }
+  }, [pollAddress, updateParams]);
 
   // Calculate progress within current epoch
   const calculateProgress = useCallback(
-    (startTime: number, endTime: number) => {
+    (epochNumber: number, startTime: number, endTime: number) => {
       const now = Date.now() / 1000;
+
+      // Handle cases where epochs are complete or not started
       if (now < startTime) return 0;
       if (now > endTime) return 100;
 
-      const totalDuration = endTime - startTime;
-      const elapsed = now - startTime;
-      return Math.min(100, Math.max(0, (elapsed / totalDuration) * 100));
+      // Calculate progress within the epoch
+      const epochDuration = endTime - startTime;
+      const elapsedInEpoch = now - startTime;
+      return Math.min(100, Math.max(0, (elapsedInEpoch / epochDuration) * 100));
     },
     []
   );
 
+  // Calculate which epoch we're in based on time
+  const calculateCurrentEpoch = useCallback(
+    (startDate: number, endDate: number) => {
+      const now = Date.now() / 1000;
+      if (now < startDate / 1000) return 1;
+      if (now >= endDate / 1000) return 4;
+
+      const totalDuration = (endDate - startDate) / 1000;
+      const epochDuration = totalDuration / 4;
+      const elapsed = now - startDate / 1000;
+
+      return Math.min(4, Math.max(1, Math.floor(elapsed / epochDuration) + 1));
+    },
+    []
+  );
+
+  // Calculate position offset for each epoch
+  const calculatePositionOffset = useCallback(
+    (epochNum: number) => {
+      if (!poll.data || currentEpoch === null) return 0;
+
+      const { startDate, endDate } = poll.data;
+      const totalDuration = (endDate - startDate) / 1000;
+      const epochDuration = totalDuration / 4;
+
+      // Calculate start and end time for this epoch
+      const epochStart = startDate / 1000 + (epochNum - 1) * epochDuration;
+      const epochEnd = startDate / 1000 + epochNum * epochDuration;
+
+      // If epoch is completed
+      if (epochNum < currentEpoch) return 100;
+
+      // If epoch is future
+      if (epochNum > currentEpoch) return 0;
+
+      // Current epoch - calculate progress
+      return calculateProgress(epochNum, epochStart, epochEnd);
+    },
+    [poll.data, currentEpoch, calculateProgress]
+  );
+
+  // Load data
   useEffect(() => {
     const fetchEpochData = async () => {
       try {
         setIsLoading(true);
-        // Get the current epoch
-        const epoch = await getCurrentEpoch(pollAddress);
-        const currentEpochNum = Number(epoch);
-        setCurrentEpoch(currentEpochNum);
+
+        if (!poll.data) {
+          return; // Wait for poll data
+        }
+
+        const { startDate, endDate } = poll.data;
+
+        // Get the current epoch from contract
+        const contractEpoch = await getCurrentEpoch(pollAddress);
+        const contractEpochNum = Number(contractEpoch);
+
+        // Calculate which epoch we should be in based on time
+        const expectedEpoch = calculateCurrentEpoch(startDate, endDate);
+        setCurrentEpoch(expectedEpoch);
 
         // Get details for all epochs
+        const totalDuration = (endDate - startDate) / 1000;
+        const epochDuration = totalDuration / 4;
+
         const details = [];
         for (let i = 1; i <= 4; i++) {
           try {
@@ -97,26 +163,19 @@ const EpochStatus = ({ pollAddress }: EpochStatusProps) => {
             const epochData = {
               ...EPOCH_DISTRIBUTIONS[i - 1],
               ...info,
-              isCurrent: i === currentEpochNum,
+              isCurrent: i === expectedEpoch,
             };
             details.push(epochData);
-
-            // Calculate progress for current epoch
-            if (i === currentEpochNum) {
-              const currentProgress = calculateProgress(
-                info.startTime,
-                info.endTime
-              );
-              setProgress(currentProgress);
-            }
           } catch (e) {
-            // If we can't get info for future epochs, use the distribution data we have
+            // If we can't get info for future epochs, calculate times
+            const epochStartTime = startDate / 1000 + (i - 1) * epochDuration;
+            const epochEndTime = startDate / 1000 + i * epochDuration;
+
             details.push({
               ...EPOCH_DISTRIBUTIONS[i - 1],
-              isCurrent: i === currentEpochNum,
-              // Add placeholder timing data
-              startTime: i === 1 ? Date.now() / 1000 - 86400 : 0,
-              endTime: i === currentEpochNum ? Date.now() / 1000 + 86400 : 0,
+              isCurrent: i === expectedEpoch,
+              startTime: epochStartTime,
+              endTime: epochEndTime,
               numStakers: 0,
               isDistributed: false,
             });
@@ -132,41 +191,48 @@ const EpochStatus = ({ pollAddress }: EpochStatusProps) => {
       }
     };
 
-    if (pollAddress) {
+    if (pollAddress && poll.data) {
       fetchEpochData();
     }
-  }, [pollAddress, getCurrentEpoch, getEpochInfo, calculateProgress]);
+  }, [pollAddress, poll.data, getCurrentEpoch, getEpochInfo, calculateCurrentEpoch]);
 
-  // Update progress periodically
+  // Update progress frequently for smoother animation
   useEffect(() => {
-    if (!isLoading && currentEpoch !== null && epochDetails.length > 0) {
-      const currentEpochData = epochDetails[currentEpoch - 1];
-      if (currentEpochData) {
-        const { startTime, endTime } = currentEpochData;
+    if (!isLoading && poll.data && currentEpoch !== null) {
+      const { startDate, endDate } = poll.data;
+      const totalDuration = (endDate - startDate) / 1000;
+      const epochDuration = totalDuration / 4;
 
-        const intervalId = setInterval(() => {
-          const newProgress = calculateProgress(startTime, endTime);
-          setProgress(newProgress);
-        }, 15000); // Update every 15 seconds
+      // Calculate start and end time for current epoch
+      const epochStart = startDate / 1000 + (currentEpoch - 1) * epochDuration;
+      const epochEnd = startDate / 1000 + currentEpoch * epochDuration;
 
-        return () => clearInterval(intervalId);
+      const intervalId = setInterval(() => {
+        // Calculate progress for current epoch
+        const now = Date.now() / 1000;
+        const newProgress = calculateProgress(currentEpoch, epochStart, epochEnd);
+        setProgress(newProgress);
+
+        // Check if we need to move to next epoch
+        if (now > epochEnd && currentEpoch < 4) {
+          setCurrentEpoch(currentEpoch + 1);
+        }
+      }, 100); // Update every 100ms for smoother animation
+
+      return () => clearInterval(intervalId);
+    }
+  }, [isLoading, poll.data, currentEpoch, calculateProgress]);
+
+  // Add debugging logs for epoch timing
+  useEffect(() => {
+    if (currentEpoch !== null && epochDetails.length > 0 && currentEpoch <= epochDetails.length) {
+      const currentEpochDetails = epochDetails[currentEpoch - 1];
+      if (currentEpochDetails && currentEpochDetails.endTime) {
+        const endTime = new Date(Number(currentEpochDetails.endTime) * 1000);
+        const now = new Date();
       }
     }
-  }, [isLoading, currentEpoch, epochDetails, calculateProgress]);
-
-  // Calculate position offset for each epoch
-  const calculatePositionOffset = (epochNum: number) => {
-    if (currentEpoch === null) return 0;
-
-    // If epoch is completed (previous epoch)
-    if (epochNum < currentEpoch) return 100;
-
-    // If epoch is future (beyond current)
-    if (epochNum > currentEpoch) return 0;
-
-    // Current epoch - use progress
-    return progress;
-  };
+  }, [currentEpoch, progress, epochDetails]);
 
   // Get current epoch message
   const getCurrentEpochMessage = () => {
@@ -175,24 +241,6 @@ const EpochStatus = ({ pollAddress }: EpochStatusProps) => {
     }
     return EPOCH_DISTRIBUTIONS[currentEpoch - 1].message;
   };
-
-  // Get the current epoch color and border
-  const getCurrentEpochColor = () => {
-    if (currentEpoch === null || currentEpoch < 1 || currentEpoch > 4) {
-      return { color: "#e2e8f0", border: "#cbd5e1" };
-    }
-    const currentEpochData = EPOCH_DISTRIBUTIONS[currentEpoch - 1];
-    return {
-      color: currentEpochData.color,
-      border: currentEpochData.border,
-    };
-  };
-
-  // Get current epoch data
-  const currentEpochData =
-    currentEpoch !== null && epochDetails.length > 0
-      ? epochDetails[currentEpoch - 1]
-      : null;
 
   return (
     <>
@@ -218,7 +266,7 @@ const EpochStatus = ({ pollAddress }: EpochStatusProps) => {
             {currentEpoch !== null ? currentEpoch : isLoading ? "-" : "0"}
           </div>
 
-          {isLoading ? (
+          {isLoading || !poll.data ? (
             <div className="flex justify-center items-center py-2">
               <Loader className="animate-spin text-gray-500 mr-2" size={16} />
               <span>Loading epoch data...</span>
@@ -226,103 +274,41 @@ const EpochStatus = ({ pollAddress }: EpochStatusProps) => {
           ) : error ? (
             <div className="text-red-500 text-sm py-2">{error}</div>
           ) : (
-            <div className="flex h-20 overflow-hidden rounded-lg gap-2 mb-6">
-              {epochDetails.map((epoch, index) => {
-                return (
-                  <div
-                    key={`epoch-${epoch.number}`}
-                    className={`relative h-full ${index === 0 ? "rounded-l-lg" : ""
-                      } ${index === epochDetails.length - 1 ? "rounded-r-lg" : ""
-                      } overflow-hidden bg-slate-50 border border-slate-100`}
-                    style={{
-                      width: `${epoch.percentage}%`,
-                    }}
-                  >
-                    {/* Main progress background in green */}
-                    <div
-                      className="absolute left-0 top-0 bottom-0 z-10 transition-all duration-1000 bg-green-200"
-                      style={{
-                        width: `${calculatePositionOffset(epoch.number)}%`,
-                        opacity:
-                          currentEpoch !== null &&
-                            (epoch.number === currentEpoch ||
-                              epoch.number < currentEpoch)
-                            ? 0.5
-                            : 0,
-                      }}
-                    />
-
-                    {/* Gradient indicator line at the end of progress */}
-                    {currentEpoch !== null &&
-                      epoch.number === currentEpoch &&
-                      calculatePositionOffset(epoch.number) > 0 && (
-                        <div
-                          className="absolute top-0 bottom-0 z-11 w-1 flex "
-                          style={{
-                            left: `calc(${calculatePositionOffset(
-                              epoch.number
-                            )}% - 2px)`,
-                          }}
-                        >
-                          <div className="w-[1px] bg-gradient-to-t from-green-400 to-green-100 " />
-                          <div className="w-[3px] bg-gradient-to-t from-green-400 to-green-50" />
-                        </div>
-                      )}
-
-                    {/* Text */}
-                    <div className="absolute inset-0 z-20 flex flex-col justify-center items-center">
-                      <div className="text-center flex items-center gap-1">
-                        <p
-                          className={`text-sm font-medium ${currentEpoch !== null &&
-                            epoch.number === currentEpoch
-                            ? "text-green-700"
-                            : "text-gray-500"
-                            }`}
-                        >
-                          epoch {epoch.number}
-                        </p>
-                        {currentEpoch !== null &&
-                          epoch.number === currentEpoch && (
-                            <span className="flex items-center justify-center mt-1 text-green-700">
-                              <svg
-                                width="10"
-                                height="10"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                xmlns="http://www.w3.org/2000/svg"
-                              >
-                                <path
-                                  d="M20 6L9 17L4 12"
-                                  stroke="currentColor"
-                                  strokeWidth="2"
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                />
-                              </svg>
-                            </span>
-                          )}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+            <EpochVisualization
+              epochDetails={epochDetails}
+              currentEpoch={currentEpoch}
+              calculatePositionOffset={calculatePositionOffset}
+            />
           )}
 
           {currentEpoch !== null && epochDetails.length > 0 && (
             <div className="space-y-1 mt-2">
-              {epochDetails[currentEpoch - 1] && (
+              {currentEpoch > 0 && currentEpoch <= epochDetails.length && (
                 <div className="text-xs text-slate-500">
                   <span>
                     {progress.toFixed(0)}% complete •{" "}
-                    {progress < 100
-                      ? formatDistanceToNow(
-                        new Date(
-                          epochDetails[currentEpoch - 1].endTime * 1000
-                        ),
-                        { addSuffix: false }
-                      ) + ` in epoch ${currentEpoch} left`
-                      : `epoch ${currentEpoch} complete`}
+                    {(() => {
+                      if (progress >= 100) {
+                        return `epoch ${currentEpoch} complete`;
+                      }
+                      
+                      if (poll.data) {
+                        const { startDate, endDate } = poll.data;
+                        const totalDuration = (endDate - startDate) / 1000; // in seconds
+                        const epochDuration = totalDuration / 4; // each epoch duration in seconds
+                        
+                        // Calculate remaining time based on progress
+                        const remainingTime = (epochDuration * (100 - progress)) / 100; // in seconds
+                        const remainingMs = remainingTime * 1000;
+                        
+                        // Create a date that's remainingMs from now for formatDistanceToNow
+                        const futureDate = new Date(Date.now() + remainingMs);
+                        return formatDistanceToNow(futureDate, { addSuffix: false }) + ` in epoch ${currentEpoch} left`;
+                      }
+                      
+                      // Fallback if we don't have poll data
+                      return `epoch ${currentEpoch} in progress`;
+                    })()}
                   </span>
                 </div>
               )}
@@ -341,88 +327,15 @@ const EpochStatus = ({ pollAddress }: EpochStatusProps) => {
           </DialogHeader>
 
           <div className="py-2">
-            {/* Epoch visual status - same as main card */}
-            <div className="flex h-20 overflow-hidden rounded-lg gap-2 mb-6">
-              {epochDetails.map((epoch, index) => {
-                return (
-                  <div
-                    key={`epoch-${epoch.number}`}
-                    className={`relative h-full ${index === 0 ? "rounded-l-lg" : ""
-                      } ${index === epochDetails.length - 1 ? "rounded-r-lg" : ""
-                      } overflow-hidden bg-slate-50 border border-slate-100`}
-                    style={{
-                      width: `${epoch.percentage}%`,
-                    }}
-                  >
-                    {/* Main progress background in green */}
-                    <div
-                      className="absolute left-0 top-0 bottom-0 z-10 transition-all duration-1000 bg-green-200"
-                      style={{
-                        width: `${calculatePositionOffset(epoch.number)}%`,
-                        opacity:
-                          currentEpoch !== null &&
-                            (epoch.number === currentEpoch ||
-                              epoch.number < currentEpoch)
-                            ? 0.5
-                            : 0,
-                      }}
-                    />
+            {/* Epoch visual status - using the shared component */}
+            {epochDetails.length > 0 && (
+              <EpochVisualization
+                epochDetails={epochDetails}
+                currentEpoch={currentEpoch}
+                calculatePositionOffset={calculatePositionOffset}
+              />
+            )}
 
-                    {/* Gradient indicator line at the end of progress */}
-                    {currentEpoch !== null &&
-                      epoch.number === currentEpoch &&
-                      calculatePositionOffset(epoch.number) > 0 && (
-                        <div
-                          className="absolute top-0 bottom-0 z-11 w-1 flex "
-                          style={{
-                            left: `calc(${calculatePositionOffset(
-                              epoch.number
-                            )}% - 2px)`,
-                          }}
-                        >
-                          <div className="w-[1px] bg-gradient-to-t from-green-400 to-green-100 " />
-                          <div className="w-[3px] bg-gradient-to-t from-green-400 to-green-50" />
-                        </div>
-                      )}
-
-                    {/* Text */}
-                    <div className="absolute inset-0 z-20 flex flex-col justify-center items-center">
-                      <div className="text-center flex items-center gap-1">
-                        <p
-                          className={`text-sm font-medium ${currentEpoch !== null &&
-                            epoch.number === currentEpoch
-                            ? "text-green-700"
-                            : "text-gray-500"
-                            }`}
-                        >
-                          epoch {epoch.number}
-                        </p>
-                        {currentEpoch !== null &&
-                          epoch.number === currentEpoch && (
-                            <span className="flex items-center justify-center mt-1 text-green-700">
-                              <svg
-                                width="10"
-                                height="10"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                xmlns="http://www.w3.org/2000/svg"
-                              >
-                                <path
-                                  d="M20 6L9 17L4 12"
-                                  stroke="currentColor"
-                                  strokeWidth="2"
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                />
-                              </svg>
-                            </span>
-                          )}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
             {/* Detailed breakdown of each epoch */}
             <div className="space-y-3">
               {epochDetails.map((epoch) => (
