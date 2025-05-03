@@ -1,7 +1,5 @@
 const data = {
   name: "PollToken",
-  // This is the implementation address, actual token addresses will be created by the factory
-  address: "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0",
   abi: [
     {
       type: "constructor",

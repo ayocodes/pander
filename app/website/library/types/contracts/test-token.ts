@@ -1,15 +1,14 @@
 const data = {
   name: "TestToken",
-  address: "0x5FbDB2315678afecb367f032d93F642f64180aa3", // Local Anvil address
+  address: "0x5FbDB2315678afecb367f032d93F642f64180aa3",
   abi: [
+    { type: "constructor", inputs: [], stateMutability: "nonpayable" },
     {
-      type: "constructor",
-      inputs: [
-        { name: "name", type: "string", internalType: "string" },
-        { name: "symbol", type: "string", internalType: "string" },
-        { name: "initialOwner", type: "address", internalType: "address" },
-      ],
-      stateMutability: "nonpayable",
+      type: "function",
+      name: "AMOUNT_PER_MINT",
+      inputs: [],
+      outputs: [{ name: "", type: "uint256", internalType: "uint256" }],
+      stateMutability: "view",
     },
     {
       type: "function",
@@ -48,10 +47,7 @@ const data = {
     {
       type: "function",
       name: "mint",
-      inputs: [
-        { name: "to", type: "address", internalType: "address" },
-        { name: "amount", type: "uint256", internalType: "uint256" },
-      ],
+      inputs: [],
       outputs: [],
       stateMutability: "nonpayable",
     },
@@ -60,13 +56,6 @@ const data = {
       name: "name",
       inputs: [],
       outputs: [{ name: "", type: "string", internalType: "string" }],
-      stateMutability: "view",
-    },
-    {
-      type: "function",
-      name: "owner",
-      inputs: [],
-      outputs: [{ name: "", type: "address", internalType: "address" }],
       stateMutability: "view",
     },
     {
@@ -106,26 +95,6 @@ const data = {
     },
     {
       type: "event",
-      name: "Transfer",
-      inputs: [
-        {
-          name: "from",
-          type: "address",
-          indexed: true,
-          internalType: "address",
-        },
-        { name: "to", type: "address", indexed: true, internalType: "address" },
-        {
-          name: "value",
-          type: "uint256",
-          indexed: false,
-          internalType: "uint256",
-        },
-      ],
-      anonymous: false,
-    },
-    {
-      type: "event",
       name: "Approval",
       inputs: [
         {
@@ -148,6 +117,69 @@ const data = {
         },
       ],
       anonymous: false,
+    },
+    {
+      type: "event",
+      name: "Transfer",
+      inputs: [
+        {
+          name: "from",
+          type: "address",
+          indexed: true,
+          internalType: "address",
+        },
+        {
+          name: "to",
+          type: "address",
+          indexed: true,
+          internalType: "address",
+        },
+        {
+          name: "value",
+          type: "uint256",
+          indexed: false,
+          internalType: "uint256",
+        },
+      ],
+      anonymous: false,
+    },
+    {
+      type: "error",
+      name: "ERC20InsufficientAllowance",
+      inputs: [
+        { name: "spender", type: "address", internalType: "address" },
+        { name: "allowance", type: "uint256", internalType: "uint256" },
+        { name: "needed", type: "uint256", internalType: "uint256" },
+      ],
+    },
+    {
+      type: "error",
+      name: "ERC20InsufficientBalance",
+      inputs: [
+        { name: "sender", type: "address", internalType: "address" },
+        { name: "balance", type: "uint256", internalType: "uint256" },
+        { name: "needed", type: "uint256", internalType: "uint256" },
+      ],
+    },
+    {
+      type: "error",
+      name: "ERC20InvalidApprover",
+      inputs: [{ name: "approver", type: "address", internalType: "address" }],
+    },
+    {
+      type: "error",
+      name: "ERC20InvalidReceiver",
+      inputs: [{ name: "receiver", type: "address", internalType: "address" }],
+    },
+    {
+      type: "error",
+      name: "ERC20InvalidSender",
+      inputs: [{ name: "sender", type: "address", internalType: "address" }],
+    },
+    {
+      type: "error",
+      name: "ERC20InvalidSpender",
+      inputs: [{ name: "spender", type: "address", internalType: "address" }],
     },
   ],
 } as const;

@@ -1,7 +1,5 @@
 const data = {
   name: "CapyPoll",
-  // This is the implementation address, actual poll addresses will be created by the factory
-  address: "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
   "abi": [
     {
       "type": "function",

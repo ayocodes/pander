@@ -8,7 +8,6 @@ const data = {
         { name: "_cloneablePoll", type: "address", internalType: "address" },
         { name: "_cloneableToken", type: "address", internalType: "address" },
         { name: "_usdeToken", type: "address", internalType: "address" },
-        { name: "_susdeToken", type: "address", internalType: "address" },
         { name: "initialOwner", type: "address", internalType: "address" },
       ],
       stateMutability: "nonpayable",
