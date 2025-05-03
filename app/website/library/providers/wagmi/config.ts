@@ -22,8 +22,16 @@ export const pharosDevnet = {
   name: "Pharos Devnet",
   nativeCurrency: { name: "ETH", symbol: "ETH", decimals: 18 },
   rpcUrls: {
-    default: { http: ["https://devnet.dplabs-internal.com"] },
-    public: { http: ["https://devnet.dplabs-internal.com"] },
+    default: {
+      http: [
+        "https://web-production-24a23.up.railway.app/https://devnet.dplabs-internal.com",
+      ],
+    },
+    public: {
+      http: [
+        "https://web-production-24a23.up.railway.app/https://devnet.dplabs-internal.com",
+      ],
+    },
   },
   blockExplorers: {
     default: { name: "PharosScan", url: "https://pharosscan.xyz" },
@@ -44,7 +52,9 @@ export const config = createConfig(
       // Transport for local anvil
       [localAnvil.id]: http("http://127.0.0.1:8545"),
       // Transport for Pharos Devnet
-      [pharosDevnet.id]: http("https://devnet.dplabs-internal.com"),
+      [pharosDevnet.id]: http(
+        "https://web-production-24a23.up.railway.app/https://devnet.dplabs-internal.com"
+      ),
     },
   })
 );
