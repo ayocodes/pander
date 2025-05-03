@@ -361,7 +361,7 @@ const Poll = () => {
                 </div>
                 <p className="text-gray-800 text-lg pt-2">
                   The registration period has ended and results are being
-                  determined. Once resolved, you'll be able to see the outcome
+                  determined. Once resolved, you&apos;ll be able to see the outcome
                   and manage your stake. Stay tuned!
                 </p>
               </div>

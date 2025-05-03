@@ -16,17 +16,7 @@ import usePanderProtocol from "@/library/hooks/use-pander-protocol-new";
 import { useMounted } from "@/library/hooks/use-mounted";
 import { getInitials, isValidUrl } from "@/library/utils";
 
-type ActivityItem = {
-  id: string;
-  question: string;
-  user: string;
-  action: "staked";
-  choice: "Yes" | "No";
-  price: number;
-  amount: number;
-  timestamp: Date;
-  avatar?: string;
-};
+
 
 const Home = () => {
   const { predictionMarkets } = usePanderProtocol();
