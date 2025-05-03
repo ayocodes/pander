@@ -13,14 +13,14 @@ import { Hash, erc20Abi, formatEther, parseUnits } from "viem";
 import { config } from "@/library/providers/wagmi/config";
 import capyCore from "@/library/types/contracts/capy-core";
 import capyPoll from "@/library/types/contracts/capy-poll";
+import usde from "@/library/types/contracts/test-token";
 
 const CAPY_POLL_ABI = capyPoll.abi;
 const CAPY_CORE_ABI = capyCore.abi;
-const USDE_TOKEN_ADDRESS = "0x9E1eF5A92C9Bf97460Cd00C0105979153EA45b27";
+const USDE_TOKEN_ADDRESS = usde.address;
 const CAPY_CORE_ADDRESS = capyCore.address;
 
-const SUBGRAPH_URL =
-  "https://api.goldsky.com/api/public/project_cm5jmcfrvjkpm01x8hfx55o9q/subgraphs/capypolls-subgraph/1.0.0/gn";
+const SUBGRAPH_URL = "http://192.168.0.199:42069/";
 
 type FunctionParams = {
   createPoll: {
@@ -74,6 +74,9 @@ interface PredictionMarket {
     avatar: string;
     question: string;
   }[];
+  blockTimestamp: string;
+  creator: string;
+  description: string;
 }
 
 interface Activity {
@@ -131,38 +134,74 @@ type QueryAction = {
 
 interface PollCreatedResponse {
   data: {
-    pollCreateds: Array<{
-      pollAddress: Hash;
-      avatar: string;
-      question: string;
-    }>;
+    pollCreateds: {
+      items: Array<{
+        pollAddress: Hash;
+        avatar: string;
+        question: string;
+        blockNumber: string;
+        creator: string;
+        description: string;
+        blockTimestamp: string;
+      }>;
+      pageInfo: {
+        endCursor: string;
+        hasNextPage: boolean;
+        hasPreviousPage: boolean;
+        startCursor: string;
+      };
+    };
   };
 }
 
 interface PollResolvedResponse {
   data: {
-    pollResolveds: Array<{
-      pollAddress: Hash;
-    }>;
+    pollResolveds: {
+      items: Array<{
+        pollAddress: Hash;
+      }>;
+      pageInfo: {
+        endCursor: string;
+        hasNextPage: boolean;
+        hasPreviousPage: boolean;
+        startCursor: string;
+      };
+    };
   };
 }
 
 interface SinglePollResponse {
   data: {
-    pollCreateds: Poll[];
+    pollCreateds: {
+      items: Poll[];
+      pageInfo: {
+        endCursor: string;
+        hasNextPage: boolean;
+        hasPreviousPage: boolean;
+        startCursor: string;
+      };
+    };
   };
 }
 
 interface StakeAddedResponse {
   data: {
-    stakeAddeds: Array<{
-      id: string;
-      amount: string;
-      position: boolean;
-      user: string;
-      pollAddress: string;
-      blockTimestamp: string;
-    }>;
+    stakeAddeds: {
+      items: Array<{
+        id: string;
+        amount: string;
+        position: boolean;
+        user: string;
+        pollAddress: string;
+        blockTimestamp: string;
+      }>;
+      pageInfo: {
+        endCursor: string;
+        hasNextPage: boolean;
+        hasPreviousPage: boolean;
+        startCursor: string;
+      };
+    };
   };
 }
 
@@ -193,17 +232,37 @@ const usePanderProtocol = () => {
         json: {
           query: `{
             pollCreateds {
-              pollAddress
-              avatar
-              question
+              items {
+                pollAddress
+                avatar
+                question
+                blockNumber
+                creator
+                description
+                blockTimestamp
+              }
+              pageInfo {
+                endCursor
+                hasNextPage
+                hasPreviousPage
+                startCursor
+              }
             }
             stakeAddeds {
-              id
-              amount
-              position
-              user
-              blockTimestamp
-              pollAddress
+              items {
+                id
+                amount
+                position
+                user
+                blockTimestamp
+                pollAddress
+              }
+              pageInfo {
+                endCursor
+                hasNextPage
+                hasPreviousPage
+                startCursor
+              }
             }
           }`,
         },
@@ -215,8 +274,8 @@ const usePanderProtocol = () => {
         };
       }>();
 
-    const polls = response.data.pollCreateds;
-    const allStakes = response.data.stakeAddeds;
+    const polls = response.data.pollCreateds.items;
+    const allStakes = response.data.stakeAddeds.items;
 
     // Transform data with additional fields
     const marketsWithDetails = await Promise.all(
@@ -235,14 +294,22 @@ const usePanderProtocol = () => {
             json: {
               query: `{
                 pollResolveds(where: { pollAddress: "${poll.pollAddress}" }) {
-                  pollAddress
+                  items {
+                    pollAddress
+                  }
+                  pageInfo {
+                    endCursor
+                    hasNextPage
+                    hasPreviousPage
+                    startCursor
+                  }
                 }
               }`,
             },
           })
           .json<PollResolvedResponse>();
 
-        const isResolved = resolvedResponse.data.pollResolveds.length > 0;
+        const isResolved = resolvedResponse.data.pollResolveds.items.length > 0;
 
         // Get recent activity for this poll
         const pollStakes = allStakes
@@ -267,6 +334,7 @@ const usePanderProtocol = () => {
           endDate: Number(poolInfo[0]) * 1000,
           tags: [], // TODO: use ML to suggest tags
           recentActivity: pollStakes,
+          participants: pollStakes.length,
         } as PredictionMarket;
       })
     );
@@ -283,21 +351,37 @@ const usePanderProtocol = () => {
         json: {
           query: `{
             pollCreateds(where: { pollAddress: "${state.pollAddress}" }) {
-              blockTimestamp
-              creator
-              pollAddress
-              avatar
-              question
-              description
-              yesToken
-              noToken
+              items {
+                blockTimestamp
+                creator
+                pollAddress
+                avatar
+                question
+                description
+                yesToken
+                noToken
+              }
+              pageInfo {
+                endCursor
+                hasNextPage
+                hasPreviousPage
+                startCursor
+              }
             }
             stakeAddeds(where: { pollAddress: "${state.pollAddress}" }) {
-              id
-              amount
-              position
-              user
-              blockTimestamp
+              items {
+                id
+                amount
+                position
+                user
+                blockTimestamp
+              }
+              pageInfo {
+                endCursor
+                hasNextPage
+                hasPreviousPage
+                startCursor
+              }
             }
           }`,
         },
@@ -309,8 +393,8 @@ const usePanderProtocol = () => {
         };
       }>();
 
-    const poll = response.data.pollCreateds[0];
-    const stakes = response.data.stakeAddeds;
+    const poll = response.data.pollCreateds.items[0];
+    const stakes = response.data.stakeAddeds.items;
 
     // Get poll info for end date
     const poolInfo = await readContract(config, {
@@ -326,7 +410,15 @@ const usePanderProtocol = () => {
         json: {
           query: `{
             pollResolveds(where: { pollAddress: "${poll.pollAddress}" }) {
-              pollAddress
+              items {
+                pollAddress
+              }
+              pageInfo {
+                endCursor
+                hasNextPage
+                hasPreviousPage
+                startCursor
+              }
             }
           }`,
         },
@@ -372,7 +464,7 @@ const usePanderProtocol = () => {
       })),
     ];
 
-    const isResolved = resolvedResponse.data.pollResolveds.length > 0;
+    const isResolved = resolvedResponse.data.pollResolveds.items.length > 0;
 
     // Get recent activity
     const recentActivity = stakes
@@ -530,7 +622,10 @@ const usePanderProtocol = () => {
         args: [formattedAmount, params.position],
       });
 
-      return writeContract(config, request);
+      const hash = await writeContract(config, request);
+      return waitForTransactionReceipt(config, {
+        hash,
+      });
     } catch (error) {
       console.error("Error staking:", error);
       throw error;
