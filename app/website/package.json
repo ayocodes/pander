@@ -7,13 +7,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
-    "verify": "node --loader ts-node/esm scripts/verifyContract.ts",
-    "check": "node --loader ts-node/esm scripts/checkContract.ts",
-    "start-workers": "node --loader ts-node/esm scripts/startWorkers.ts",
-    "start-monitoring": "node --loader ts-node/esm scripts/startMonitoring.ts",
-    "check-status": "node --loader ts-node/esm scripts/checkStatus.ts",
-    "start-backend": "npm run verify && npm run check && npm run start-workers && npm run start-monitoring"
+    "lint": "next lint"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.0.1",

@@ -1,10 +1,13 @@
+import dotenv from "dotenv";
 import { createPublicClient, createWalletClient, http } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { foundry } from "viem/chains";
 
-import capyCore from "../../../website/library/types/contracts/capy-core.js";
-import capyPoll from "../../../website/library/types/contracts/capy-poll.js";
 import { logger } from "../../utils/logger.js";
+import capyCore from "../contracts/capy-core.js";
+import capyPoll from "../contracts/capy-poll.js";
+
+dotenv.config();
 
 // For local development with Anvil
 const publicClient = createPublicClient({
@@ -13,8 +16,7 @@ const publicClient = createPublicClient({
 });
 
 // Use one of Anvil's default private keys
-const privateKey =
-  "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
+const privateKey = process.env.PRIVATE_KEY;
 const account = privateKeyToAccount(privateKey as `0x${string}`);
 
 const walletClient = createWalletClient({
@@ -30,7 +32,7 @@ export class ContractService {
   private readonly serviceLogger = logger.child({
     component: "ContractService",
   });
-  private readonly SUBGRAPH_URL = "http://192.168.0.199:42069/";
+  private readonly INDEXER_URL = process.env.INDEXER_URL || "";
 
   async getPollCount(): Promise<number> {
     try {
@@ -265,7 +267,7 @@ export class ContractService {
       };
 
       // Query the indexer using fetch
-      const fetchResponse = await fetch(this.SUBGRAPH_URL, {
+      const fetchResponse = await fetch(this.INDEXER_URL, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

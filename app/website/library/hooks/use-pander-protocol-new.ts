@@ -20,7 +20,7 @@ const CAPY_CORE_ABI = capyCore.abi;
 const USDE_TOKEN_ADDRESS = usde.address;
 const CAPY_CORE_ADDRESS = capyCore.address;
 
-const SUBGRAPH_URL = "http://192.168.0.199:42069/";
+const INDEXER_URL = process.env.NEXT_PUBLIC_INDEXER_URL || "";
 
 type FunctionParams = {
   createPoll: {
@@ -228,7 +228,7 @@ const usePanderProtocol = () => {
   const fetchMarkets = useCallback(async () => {
     // Get created polls and stakes in one query
     const response = await ky
-      .post(SUBGRAPH_URL, {
+      .post(INDEXER_URL, {
         json: {
           query: `{
             pollCreateds {
@@ -290,7 +290,7 @@ const usePanderProtocol = () => {
 
         // Check if poll is resolved
         const resolvedResponse = await ky
-          .post(SUBGRAPH_URL, {
+          .post(INDEXER_URL, {
             json: {
               query: `{
                 pollResolveds(where: { pollAddress: "${poll.pollAddress}" }) {
@@ -347,7 +347,7 @@ const usePanderProtocol = () => {
 
     // Get poll data and stakes in one query
     const response = await ky
-      .post(SUBGRAPH_URL, {
+      .post(INDEXER_URL, {
         json: {
           query: `{
             pollCreateds(where: { pollAddress: "${state.pollAddress}" }) {
@@ -406,7 +406,7 @@ const usePanderProtocol = () => {
 
     // Check if poll is resolved
     const resolvedResponse = await ky
-      .post(SUBGRAPH_URL, {
+      .post(INDEXER_URL, {
         json: {
           query: `{
             pollResolveds(where: { pollAddress: "${poll.pollAddress}" }) {

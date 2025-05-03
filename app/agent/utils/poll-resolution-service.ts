@@ -55,7 +55,7 @@ export async function resolveWithAI(
     console.log(`source info from exa: ${sourcesInfo}`);
 
     // 4. Send to OpenRouter for analysis
-    const OPENROUTER_API_KEY = process.env.NEXT_PUBLIC_OPENROUTER_API_KEY || "";
+    const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY || "";
 
     const response = await fetch(
       "https://openrouter.ai/api/v1/chat/completions",
