@@ -1,8 +1,5 @@
-import dotenv from "dotenv";
 import { createConfig, factory, rateLimit } from "ponder";
 import { http, parseAbiItem } from "viem";
-
-dotenv.config();
 
 import { CapyCoreAbi, CapyPollAbi } from "./abis/pandpoll-abi";
 import { capyCoreAddress, network, startBlock } from "./constants";
@@ -11,8 +8,8 @@ export default createConfig({
   networks: {
     pharosDevnet: {
       chainId: 50002,
-      transport: rateLimit(http(process.env.PONDER_RPC_URL), {
-        requestsPerSecond: Number(process.env.PONDER_REQUESTS_PER_SECOND || 50),
+      transport: rateLimit(http("https://devnet.dplabs-internal.com"), {
+        requestsPerSecond: Number(process.env.PONDER_REQUESTS_PER_SECOND || 500),
       }),
     },
     anvil: {
