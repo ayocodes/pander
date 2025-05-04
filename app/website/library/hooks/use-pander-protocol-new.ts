@@ -593,6 +593,7 @@ const usePanderProtocol = () => {
           params.noTokenName,
           params.noTokenSymbol,
         ],
+        gas: 3000000n,
       });
 
       const hash = await writeContract(config, request);
