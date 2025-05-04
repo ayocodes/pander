@@ -1,15 +1,14 @@
 import cors from "cors";
 import dotenv from "dotenv";
 import express from "express";
-import { createProxyMiddleware } from "http-proxy-middleware";
+import { createProxyMiddleware, Options } from "http-proxy-middleware";
 import { HttpsProxyAgent } from "https-proxy-agent";
-import { IncomingMessage, ServerResponse } from "http";
+import { IncomingMessage, ServerResponse, ClientRequest } from "http";
 import { Socket } from "net";
+import { Request, Response } from "express";
 
 dotenv.config();
-
 const app = express();
-
 app.use(cors());
 
 const PORT = process.env.PORT || 3000;
@@ -30,6 +29,7 @@ const MARS_PROXY = {
 // Set to 'both' to use both methods (for troubleshooting)
 const AUTH_STYLE = process.env.AUTH_STYLE || "both";
 
+// Create proxy agent
 let proxyAgent = null;
 if (AUTH_STYLE === "agent" || AUTH_STYLE === "both") {
   const proxyUrl = `http://${MARS_PROXY.auth.username}:${MARS_PROXY.auth.password}@${MARS_PROXY.host}:${MARS_PROXY.port}`;
@@ -39,49 +39,67 @@ if (AUTH_STYLE === "agent" || AUTH_STYLE === "both") {
   );
 }
 
-const rpcProxy = createProxyMiddleware({
+// Set headers proactively in the options instead of in onProxyReq
+const proxyOptions: Options = {
   target: TARGET_RPC_URL,
   changeOrigin: true,
-  agent: proxyAgent,
+  agent: proxyAgent, // Add headers to all outgoing requests
+  headers: {}, // Event handlers
   on: {
-    proxyReq: (proxyReq, req, res) => {
-      // Check if headers have already been sent to avoid ERR_HTTP_HEADERS_SENT
-      if (res.headersSent || !proxyReq.writable) {
-        console.warn(
-          "Headers already sent or request not writable, skipping proxy header modifications"
-        );
-        return;
-      }
-
-      try {
-        // Add header-based authentication if configured
-        if (AUTH_STYLE === "headers" || AUTH_STYLE === "both") {
-          // Method 1: Basic auth header (some proxies accept this)
-          const auth = Buffer.from(
-            `${MARS_PROXY.auth.username}:${MARS_PROXY.auth.password}`
-          ).toString("base64");
-          proxyReq.setHeader("Proxy-Authorization", `Basic ${auth}`);
-
-          // Method 2: Custom headers (some proxies use these)
-          proxyReq.setHeader("X-Proxy-User", MARS_PROXY.auth.username);
-          proxyReq.setHeader("X-Proxy-Password", MARS_PROXY.auth.password);
-          console.log("Added proxy authentication headers");
+    proxyReq: (
+      proxyReq: ClientRequest,
+      req: IncomingMessage,
+      res: ServerResponse
+    ) => {
+      if (!proxyReq.headersSent && proxyReq.writable) {
+        try {
+          // Add header-based authentication if configured
+          if (AUTH_STYLE === "headers" || AUTH_STYLE === "both") {
+            const auth = Buffer.from(
+              `${MARS_PROXY.auth.username}:${MARS_PROXY.auth.password}`
+            ).toString("base64"); // Try-catch each header modification individually
+            try {
+              proxyReq.setHeader("Proxy-Authorization", `Basic ${auth}`);
+            } catch (e: unknown) {
+              console.warn(
+                "Could not set Proxy-Authorization header:",
+                e instanceof Error ? e.message : String(e)
+              );
+            }
+            try {
+              proxyReq.setHeader("X-Proxy-User", MARS_PROXY.auth.username);
+            } catch (e: unknown) {
+              console.warn(
+                "Could not set X-Proxy-User header:",
+                e instanceof Error ? e.message : String(e)
+              );
+            }
+            try {
+              proxyReq.setHeader("X-Proxy-Password", MARS_PROXY.auth.password);
+            } catch (e: unknown) {
+              console.warn(
+                "Could not set X-Proxy-Password header:",
+                e instanceof Error ? e.message : String(e)
+              );
+            } // We're NOT setting X-Forwarded-For here - it's now in the main options
+            console.log("Attempted to add proxy authentication headers");
+          }
+        } catch (error: unknown) {
+          console.warn(
+            "Error setting proxy headers:",
+            error instanceof Error ? error.message : String(error)
+          );
         }
-
-        // Set X-Forwarded-For header
-        proxyReq.setHeader("X-Forwarded-For", MARS_PROXY.host);
-      } catch (error) {
-        // Only log the error, don't rethrow it
-        console.warn(
-          "Error setting proxy headers:",
-          error instanceof Error ? error.message : String(error)
-        );
+      } else {
+        console.warn("Headers already sent or request not writable");
       }
     },
-    error: (err, req, res: ServerResponse<IncomingMessage> | Socket) => {
-      console.error("Proxy error:", err);
-
-      // Check if res is a ServerResponse (has headersSent property)
+    error: (
+      err: Error,
+      req: IncomingMessage,
+      res: ServerResponse<IncomingMessage> | Socket
+    ) => {
+      console.error("Proxy error:", err); // Check if res is a ServerResponse (has headersSent property)
       if ("headersSent" in res && !res.headersSent) {
         if ("writeHead" in res) {
           res.writeHead(500);
@@ -90,6 +108,26 @@ const rpcProxy = createProxyMiddleware({
       }
     },
   },
+};
+
+// Set the X-Forwarded-For header in the main options instead
+if (MARS_PROXY.host) {
+  proxyOptions.headers = {
+    ...proxyOptions.headers,
+    "X-Forwarded-For": MARS_PROXY.host,
+  };
+}
+
+const rpcProxy = createProxyMiddleware(proxyOptions);
+
+// Status endpoint - must come BEFORE the catch-all proxy
+app.get("/status", (req: Request, res: Response) => {
+  res.json({
+    status: "online",
+    proxy: `${MARS_PROXY.host}:${MARS_PROXY.port}`,
+    targetRpc: TARGET_RPC_URL,
+    authStyle: AUTH_STYLE,
+  });
 });
 
 app.use("/", rpcProxy);
