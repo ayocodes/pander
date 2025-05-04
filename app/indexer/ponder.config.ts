@@ -1,11 +1,11 @@
-import { createConfig, factory, loadBalance, rateLimit } from "ponder";
-import { http, parseAbiItem, webSocket } from "viem";
 import dotenv from "dotenv";
+import { createConfig, factory, loadBalance, rateLimit } from "ponder";
+import { http, parseAbiItem } from "viem";
 
 dotenv.config();
 
 import { CapyCoreAbi, CapyPollAbi } from "./abis/pandpoll-abi";
-import { capyCoreAddress, startBlock, network } from "./constants";
+import { capyCoreAddress, network } from "./constants";
 
 export default createConfig({
   networks: {
@@ -30,7 +30,7 @@ export default createConfig({
       network: network,
       abi: CapyCoreAbi,
       address: capyCoreAddress,
-      startBlock: startBlock,
+      startBlock: Number(process.env.PONDER_START_BLOCK || 0),
     },
     CapyPoll: {
       network: network,
@@ -42,7 +42,7 @@ export default createConfig({
         ),
         parameter: "pollAddress",
       }),
-      startBlock: startBlock,
+      startBlock: Number(process.env.PONDER_START_BLOCK || 0),
     },
   },
 });
