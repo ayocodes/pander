@@ -1,5 +1,8 @@
 import { createConfig, factory } from "ponder";
 import { http, parseAbiItem } from "viem";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 import { CapyCoreAbi, CapyPollAbi } from "./abis/pandpoll-abi";
 import { capyCoreAddress, startBlock, network } from "./constants";
@@ -8,7 +11,7 @@ export default createConfig({
   networks: {
     pharosDevnet: {
       chainId: 50002,
-      transport: http("https://devnet.dplabs-internal.com/"),
+      transport: http(process.env.PONDER_RPC_URL_1),
     },
     anvil: {
       chainId: 31337,
