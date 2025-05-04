@@ -681,13 +681,14 @@ const usePanderProtocol = () => {
   const addTokenToWallet = async (walletAddress: string) => {
     if (!window.ethereum) return;
     try {
+      alert("1")
       const symbol = await readContract(config, {
         address: walletAddress as Hash,
         abi: erc20Abi,
         functionName: "symbol",
         args: [],
       });
-
+      alert("2")
       await window.ethereum.request({
         method: "wallet_watchAsset",
         params: {
@@ -699,8 +700,11 @@ const usePanderProtocol = () => {
           },
         },
       });
+      alert("3")
     } catch (err) {
       console.error("Failed to add token to wallet:", err);
+      alert("4")
+
     }
   };
 
