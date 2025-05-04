@@ -182,6 +182,7 @@ export class ContractService {
         functionName: "distributeEpochRewards",
         args: [BigInt(epochNumber)],
         account: account.address,
+        gas: BigInt(2000000)
       });
 
       const hash = await walletClient.writeContract(request);
@@ -229,6 +230,7 @@ export class ContractService {
         functionName: "resolvePoll",
         args: [winningPosition],
         account: account.address,
+        gas: BigInt(2000000)
       });
 
       const hash = await walletClient.writeContract(request);
