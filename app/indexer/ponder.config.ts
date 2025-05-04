@@ -12,7 +12,7 @@ export default createConfig({
     pharosDevnet: {
       chainId: 50002,
       transport: rateLimit(http(process.env.PONDER_RPC_URL_1), {
-        requestsPerSecond: 1.6,
+        requestsPerSecond: Number(process.env.PONDER_REQUESTS_PER_SECOND || 10),
       }),
     },
     anvil: {
