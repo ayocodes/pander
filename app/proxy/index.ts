@@ -42,20 +42,39 @@ const rpcProxy = createProxyMiddleware({
   changeOrigin: true,
   agent: proxyAgent,
   on: {
-    proxyReq: (proxyReq) => {
+    proxyReq: (proxyReq, req, res) => {
+      // Check if headers have already been sent to avoid ERR_HTTP_HEADERS_SENT
+      if (res.headersSent) {
+        console.warn(
+          "Headers already sent, skipping proxy header modifications"
+        );
+        return;
+      }
+
       // Add header-based authentication if configured
       if (AUTH_STYLE === "headers" || AUTH_STYLE === "both") {
-        // Method 1: Basic auth header (some proxies accept this)
-        const auth = Buffer.from(
-          `${MARS_PROXY.auth.username}:${MARS_PROXY.auth.password}`
-        ).toString("base64");
-        proxyReq.setHeader("Proxy-Authorization", `Basic ${auth}`);
-        console.log("Added Proxy-Authorization header"); // Method 2: Custom headers (some proxies use these)
-        proxyReq.setHeader("X-Proxy-User", MARS_PROXY.auth.username);
-        proxyReq.setHeader("X-Proxy-Password", MARS_PROXY.auth.password);
-        console.log("Added custom proxy auth headers");
+        try {
+          // Method 1: Basic auth header (some proxies accept this)
+          const auth = Buffer.from(
+            `${MARS_PROXY.auth.username}:${MARS_PROXY.auth.password}`
+          ).toString("base64");
+          proxyReq.setHeader("Proxy-Authorization", `Basic ${auth}`);
+          console.log("Added Proxy-Authorization header");
+
+          // Method 2: Custom headers (some proxies use these)
+          proxyReq.setHeader("X-Proxy-User", MARS_PROXY.auth.username);
+          proxyReq.setHeader("X-Proxy-Password", MARS_PROXY.auth.password);
+          console.log("Added custom proxy auth headers");
+        } catch (error) {
+          console.error("Error setting proxy headers:", error);
+        }
       }
-      proxyReq.setHeader("X-Forwarded-For", MARS_PROXY.host);
+
+      try {
+        proxyReq.setHeader("X-Forwarded-For", MARS_PROXY.host);
+      } catch (error) {
+        console.error("Error setting X-Forwarded-For header:", error);
+      }
     },
     error: (err, req, res) => {
       console.error("Proxy error:", err);
