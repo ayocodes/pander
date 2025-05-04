@@ -1,5 +1,5 @@
-import { createConfig, factory, rateLimit } from "ponder";
-import { http, parseAbiItem } from "viem";
+import { createConfig, factory, loadBalance, rateLimit } from "ponder";
+import { http, parseAbiItem, webSocket } from "viem";
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -11,9 +11,23 @@ export default createConfig({
   networks: {
     pharosDevnet: {
       chainId: 50002,
-      transport: rateLimit(http(process.env.PONDER_RPC_URL_1), {
-        requestsPerSecond: Number(process.env.PONDER_REQUESTS_PER_SECOND || 10),
-      }),
+      transport: loadBalance([
+        rateLimit(http(process.env.PONDER_RPC_URL_1), {
+          requestsPerSecond: Number(
+            process.env.PONDER_REQUESTS_PER_SECOND || 50
+          ),
+        }),
+        rateLimit(http(process.env.PONDER_RPC_URL_2), {
+          requestsPerSecond: Number(
+            process.env.PONDER_REQUESTS_PER_SECOND || 50
+          ),
+        }),
+        rateLimit(webSocket(process.env.PONDER_RPC_WS_URL), {
+          requestsPerSecond: Number(
+            process.env.PONDER_REQUESTS_PER_SECOND || 50
+          ),
+        }),
+      ]),
     },
     anvil: {
       chainId: 31337,
