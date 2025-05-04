@@ -1,23 +1,19 @@
 import dotenv from "dotenv";
-import { createConfig, factory, loadBalance, rateLimit } from "ponder";
+import { createConfig, factory, rateLimit } from "ponder";
 import { http, parseAbiItem } from "viem";
 
 dotenv.config();
 
 import { CapyCoreAbi, CapyPollAbi } from "./abis/pandpoll-abi";
-import { capyCoreAddress, network } from "./constants";
+import { capyCoreAddress, network, startBlock } from "./constants";
 
 export default createConfig({
   networks: {
     pharosDevnet: {
       chainId: 50002,
-      transport: loadBalance([
-        rateLimit(http(process.env.PONDER_RPC_URL), {
-          requestsPerSecond: Number(
-            process.env.PONDER_REQUESTS_PER_SECOND || 50
-          ),
-        }),
-      ]),
+      transport: rateLimit(http(process.env.PONDER_RPC_URL), {
+        requestsPerSecond: Number(process.env.PONDER_REQUESTS_PER_SECOND || 50),
+      }),
     },
     anvil: {
       chainId: 31337,
@@ -30,7 +26,7 @@ export default createConfig({
       network: network,
       abi: CapyCoreAbi,
       address: capyCoreAddress,
-      startBlock: Number(process.env.PONDER_START_BLOCK || 0),
+      startBlock: startBlock,
     },
     CapyPoll: {
       network: network,
@@ -42,7 +38,7 @@ export default createConfig({
         ),
         parameter: "pollAddress",
       }),
-      startBlock: Number(process.env.PONDER_START_BLOCK || 0),
+      startBlock: startBlock,
     },
   },
 });
