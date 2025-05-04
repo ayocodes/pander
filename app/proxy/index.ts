@@ -2,6 +2,7 @@ import cors from "cors";
 import dotenv from "dotenv";
 import express from "express";
 import { createProxyMiddleware } from "http-proxy-middleware";
+import { HttpsProxyAgent } from "https-proxy-agent";
 
 dotenv.config();
 
@@ -21,16 +22,39 @@ const MARS_PROXY = {
   },
 };
 
+// Authentication style
+// Set to 'agent' for proxy-authorization via agent (most common)
+// Set to 'headers' for authentication via custom headers
+// Set to 'both' to use both methods (for troubleshooting)
+const AUTH_STYLE = process.env.AUTH_STYLE || "both";
+
+let proxyAgent = null;
+if (AUTH_STYLE === "agent" || AUTH_STYLE === "both") {
+  const proxyUrl = `http://${MARS_PROXY.auth.username}:${MARS_PROXY.auth.password}@${MARS_PROXY.host}:${MARS_PROXY.port}`;
+  proxyAgent = new HttpsProxyAgent(proxyUrl);
+  console.log(
+    `Created proxy agent with URL: http://${MARS_PROXY.auth.username}:***@${MARS_PROXY.host}:${MARS_PROXY.port}`
+  );
+}
+
 const rpcProxy = createProxyMiddleware({
   target: TARGET_RPC_URL,
   changeOrigin: true,
-  agent: {
-    host: MARS_PROXY.host,
-    port: MARS_PROXY.port,
-    auth: `${MARS_PROXY.auth.username}:${MARS_PROXY.auth.password}`,
-  },
+  agent: proxyAgent,
   on: {
     proxyReq: (proxyReq) => {
+      // Add header-based authentication if configured
+      if (AUTH_STYLE === "headers" || AUTH_STYLE === "both") {
+        // Method 1: Basic auth header (some proxies accept this)
+        const auth = Buffer.from(
+          `${MARS_PROXY.auth.username}:${MARS_PROXY.auth.password}`
+        ).toString("base64");
+        proxyReq.setHeader("Proxy-Authorization", `Basic ${auth}`);
+        console.log("Added Proxy-Authorization header"); // Method 2: Custom headers (some proxies use these)
+        proxyReq.setHeader("X-Proxy-User", MARS_PROXY.auth.username);
+        proxyReq.setHeader("X-Proxy-Password", MARS_PROXY.auth.password);
+        console.log("Added custom proxy auth headers");
+      }
       proxyReq.setHeader("X-Forwarded-For", MARS_PROXY.host);
     },
     error: (err, req, res) => {

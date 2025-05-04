@@ -17,6 +17,7 @@
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "http-proxy-middleware": "^3.0.5",
+    "https-proxy-agent": "^7.0.6",
     "tsx": "^4.19.2"
   },
   "devDependencies": {
