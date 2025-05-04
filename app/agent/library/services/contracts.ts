@@ -1,6 +1,12 @@
 import dotenv from "dotenv";
-import { createPublicClient, createWalletClient, http } from "viem";
-import { privateKeyToAccount } from "viem/accounts";
+import {
+  createPublicClient,
+  createWalletClient,
+  http,
+  type PublicClient,
+  type WalletClient,
+} from "viem";
+import { privateKeyToAccount, type PrivateKeyAccount } from "viem/accounts";
 import { foundry } from "viem/chains";
 
 import { logger } from "../../utils/logger.js";
@@ -9,21 +15,51 @@ import capyPoll from "../contracts/capy-poll.js";
 
 dotenv.config();
 
-// For local development with Anvil
-const publicClient = createPublicClient({
-  chain: foundry,
-  transport: http("http://localhost:8545"),
-});
+const pharosDevnet = {
+  id: 50002,
+  name: "Pharos Devnet",
+  nativeCurrency: { name: "ETH", symbol: "ETH", decimals: 18 },
+  rpcUrls: {
+    default: {
+      http: [
+        "https://web-production-24a23.up.railway.app/https://devnet.dplabs-internal.com",
+      ],
+    },
+  },
+};
 
-// Use one of Anvil's default private keys
+let publicClient: PublicClient;
+let walletClient: WalletClient;
+let account: PrivateKeyAccount;
 const privateKey = process.env.PRIVATE_KEY;
-const account = privateKeyToAccount(privateKey as `0x${string}`);
 
-const walletClient = createWalletClient({
-  account,
-  chain: foundry,
-  transport: http("http://localhost:8545"),
-});
+if (process.env.NODE_ENV === "development") {
+  publicClient = createPublicClient({
+    chain: foundry,
+    transport: http("http://localhost:8545"),
+  });
+
+  account = privateKeyToAccount(privateKey as `0x${string}`);
+
+  walletClient = createWalletClient({
+    account,
+    chain: foundry,
+    transport: http("http://localhost:8545"),
+  });
+} else {
+  publicClient = createPublicClient({
+    chain: pharosDevnet,
+    transport: http("https://devnet.dplabs-internal.com"),
+  });
+
+  account = privateKeyToAccount(privateKey as `0x${string}`);
+
+  walletClient = createWalletClient({
+    account,
+    chain: pharosDevnet,
+    transport: http("https://devnet.dplabs-internal.com"),
+  });
+}
 
 export class ContractService {
   private readonly CAPY_CORE_ADDRESS = capyCore.address;
