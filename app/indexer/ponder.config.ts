@@ -12,12 +12,7 @@ export default createConfig({
     pharosDevnet: {
       chainId: 50002,
       transport: loadBalance([
-        rateLimit(http(process.env.PONDER_RPC_URL_1), {
-          requestsPerSecond: Number(
-            process.env.PONDER_REQUESTS_PER_SECOND || 50
-          ),
-        }),
-        rateLimit(http(process.env.PONDER_RPC_URL_2), {
+        rateLimit(http(process.env.PONDER_RPC_URL), {
           requestsPerSecond: Number(
             process.env.PONDER_REQUESTS_PER_SECOND || 50
           ),
