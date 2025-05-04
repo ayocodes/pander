@@ -1,4 +1,4 @@
-import { createConfig, factory } from "ponder";
+import { createConfig, factory, rateLimit } from "ponder";
 import { http, parseAbiItem } from "viem";
 import dotenv from "dotenv";
 
@@ -11,7 +11,9 @@ export default createConfig({
   networks: {
     pharosDevnet: {
       chainId: 50002,
-      transport: http(process.env.PONDER_RPC_URL_1),
+      transport: rateLimit(http(process.env.PONDER_RPC_URL_1), {
+        requestsPerSecond: 1.6,
+      }),
     },
     anvil: {
       chainId: 31337,
