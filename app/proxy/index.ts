@@ -3,6 +3,8 @@ import dotenv from "dotenv";
 import express from "express";
 import { createProxyMiddleware } from "http-proxy-middleware";
 import { HttpsProxyAgent } from "https-proxy-agent";
+import { IncomingMessage, ServerResponse } from "http";
+import { Socket } from "net";
 
 dotenv.config();
 
@@ -44,46 +46,45 @@ const rpcProxy = createProxyMiddleware({
   on: {
     proxyReq: (proxyReq, req, res) => {
       // Check if headers have already been sent to avoid ERR_HTTP_HEADERS_SENT
-      if (res.headersSent) {
+      if (res.headersSent || !proxyReq.writable) {
         console.warn(
-          "Headers already sent, skipping proxy header modifications"
+          "Headers already sent or request not writable, skipping proxy header modifications"
         );
         return;
       }
 
-      // Add header-based authentication if configured
-      if (AUTH_STYLE === "headers" || AUTH_STYLE === "both") {
-        try {
+      try {
+        // Add header-based authentication if configured
+        if (AUTH_STYLE === "headers" || AUTH_STYLE === "both") {
           // Method 1: Basic auth header (some proxies accept this)
           const auth = Buffer.from(
             `${MARS_PROXY.auth.username}:${MARS_PROXY.auth.password}`
           ).toString("base64");
           proxyReq.setHeader("Proxy-Authorization", `Basic ${auth}`);
-          console.log("Added Proxy-Authorization header");
 
           // Method 2: Custom headers (some proxies use these)
           proxyReq.setHeader("X-Proxy-User", MARS_PROXY.auth.username);
           proxyReq.setHeader("X-Proxy-Password", MARS_PROXY.auth.password);
-          console.log("Added custom proxy auth headers");
-        } catch (error) {
-          console.error("Error setting proxy headers:", error);
+          console.log("Added proxy authentication headers");
         }
-      }
 
-      try {
+        // Set X-Forwarded-For header
         proxyReq.setHeader("X-Forwarded-For", MARS_PROXY.host);
       } catch (error) {
-        console.error("Error setting X-Forwarded-For header:", error);
+        // Only log the error, don't rethrow it
+        console.warn(
+          "Error setting proxy headers:",
+          error instanceof Error ? error.message : String(error)
+        );
       }
     },
-    error: (err, req, res) => {
+    error: (err, req, res: ServerResponse<IncomingMessage> | Socket) => {
       console.error("Proxy error:", err);
-      if ("writeHead" in res) {
-        res.writeHead(500);
-        res.end("Something went wrong");
-      } else {
-        if (res.writable) {
-          res.write("HTTP/1.1 500 Internal Server Error\r\n\r\n");
+
+      // Check if res is a ServerResponse (has headersSent property)
+      if ("headersSent" in res && !res.headersSent) {
+        if ("writeHead" in res) {
+          res.writeHead(500);
           res.end("Something went wrong");
         }
       }
