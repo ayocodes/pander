@@ -54,7 +54,7 @@ export default createConfig({
   networks: {
     pharosDevnet: {
       chainId: 50002,
-      transport: loadBalance(transports),
+      transport: http(process.env.PONDER_RPC_URL_4), //loadBalance(transports),
     },
     anvil: {
       chainId: 31337,
