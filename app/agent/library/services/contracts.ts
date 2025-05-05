@@ -49,7 +49,7 @@ if (process.env.NODE_ENV === "development") {
 } else {
   publicClient = createPublicClient({
     chain: pharosDevnet,
-    transport: http("https://devnet.dplabs-internal.com"),
+    transport: http("https://rpc-proxy-driver-production.up.railway.app"),
   });
 
   account = privateKeyToAccount(privateKey as `0x${string}`);
@@ -57,7 +57,7 @@ if (process.env.NODE_ENV === "development") {
   walletClient = createWalletClient({
     account,
     chain: pharosDevnet,
-    transport: http("https://devnet.dplabs-internal.com"),
+    transport: http("https://rpc-proxy-driver-production.up.railway.app"),
   });
 }
 
@@ -177,11 +177,11 @@ export class ContractService {
       );
 
       const { request } = await publicClient.simulateContract({
+        account: walletClient.account,
         address: pollAddress,
         abi: this.CAPY_POLL_ABI,
         functionName: "distributeEpochRewards",
         args: [BigInt(epochNumber)],
-        account: account.address,
         gas: BigInt(2000000)
       });
 
@@ -225,11 +225,11 @@ export class ContractService {
       );
 
       const { request } = await publicClient.simulateContract({
+        account: walletClient.account,
         address: pollAddress,
         abi: this.CAPY_POLL_ABI,
         functionName: "resolvePoll",
         args: [winningPosition],
-        account: account.address,
         gas: BigInt(2000000)
       });
 
