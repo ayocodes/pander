@@ -12,8 +12,8 @@ export default createConfig({
     pharosDevnet: {
       chainId: 50002,
       transport: http(process.env.PONDER_RPC_URL), //loadBalance(transports),
-      pollingInterval: 2000,
-      maxRequestsPerSecond: 1000
+      pollingInterval: 20,
+      maxRequestsPerSecond: 5000
     },
     anvil: {
       chainId: 31337,
