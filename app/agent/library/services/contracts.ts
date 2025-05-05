@@ -22,7 +22,7 @@ const pharosDevnet = {
   rpcUrls: {
     default: {
       http: [
-        "https://web-production-24a23.up.railway.app/https://devnet.dplabs-internal.com",
+        "https://rpc-proxy-driver-production.up.railway.app",
       ],
     },
   },
