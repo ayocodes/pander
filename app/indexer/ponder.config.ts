@@ -13,7 +13,7 @@ export default createConfig({
       chainId: 50002,
       transport: http(process.env.PONDER_RPC_URL), //loadBalance(transports),
       pollingInterval: 12000,
-      maxRequestsPerSecond: 2
+      maxRequestsPerSecond: 500
     },
     anvil: {
       chainId: 31337,
